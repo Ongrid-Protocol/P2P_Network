@@ -55,9 +55,9 @@ async fn register_node(agent: &Agent, canister_id: &Principal, node_principal: P
     let response = agent
         .update(canister_id, "register_node")
         .with_arg(candid::encode_args((
-            node_principal,
             name,
             multiaddr,
+            node_principal,
         ))?)
         .call_and_wait()
         .await?;
@@ -174,6 +174,38 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let canister_id = Principal::from_text(&config.node.ic.canister_id)?;
     println!("Canister ID: {}", canister_id);
 
+    // Get initial public IP
+    let initial_ip = get_public_ip().await;
+    let initial_multiaddr = if let Some(ip) = &initial_ip {
+        format!("/ip4/{}/tcp/{}/p2p/{}", ip, config.node.port, peer_id)
+    } else {
+        format!("/ip4/127.0.0.1/tcp/{}/p2p/{}", config.node.port, peer_id)
+    };
+
+    // Attempt initial registration
+    if let Some(ip) = &initial_ip {
+        match register_node(
+            &agent,
+            &canister_id,
+            node_principal,
+            &config.node.name,
+            &initial_multiaddr,
+        ).await {
+            Ok(response) => {
+                if response.success {
+                    println!("Successfully registered node with canister");
+                    println!("Assigned Principal ID: {}", response.principal);
+                    if let Err(e) = save_principal_id(&response.principal) {
+                        println!("Failed to save principal ID: {}", e);
+                    }
+                } else {
+                    println!("Failed to register node with canister");
+                }
+            }
+            Err(e) => println!("Error registering node: {}", e),
+        }
+    }
+
     // Fetch active peer nodes from the canister
     let active_nodes = fetch_peer_nodes(&agent, &config.node).await?;
     println!("Active Peer Nodes: {:?}", active_nodes);
@@ -201,10 +233,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let mut registered = false;
-    let mut last_ip = String::new();
+    let mut last_ip = initial_ip.unwrap_or_default();
     let mut heartbeat_interval = interval(Duration::from_secs(30));
 
+    // Main event loop
     loop {
         tokio::select! {
             event = swarm.select_next_some() => {
@@ -213,49 +245,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         println!("\nNode Information:");
                         println!("Name: {}", config.node.name);
                         println!("PeerId: {}", peer_id);
-                        
-                        // Extract the port from the address
-                        let port = address.to_string()
-                            .split('/')
-                            .find(|s| s.parse::<u16>().is_ok())
-                            .and_then(|s| s.parse::<u16>().ok())
-                            .unwrap_or(config.node.port);
-
-                        // Get and display the public IP
-                        if let Some(public_ip) = get_public_ip().await {
-                            let multiaddr = format!("/ip4/{}/tcp/{}/p2p/{}", public_ip, port, peer_id);
-                            println!("Public Multiaddr: {}", multiaddr);
-
-                            // Only register if we haven't registered before
-                            if !registered {
-                                match register_node(
-                                    &agent,
-                                    &canister_id,
-                                    node_principal,
-                                    &config.node.name,
-                                    &multiaddr,
-                                ).await {
-                                    Ok(response) => {
-                                        if response.success {
-                                            println!("Successfully registered node with canister");
-                                            println!("Assigned Principal ID: {}", response.principal);
-                                            registered = true;
-                                            last_ip = public_ip.to_string();
-                                            // Save the principal ID for future use
-                                            if let Err(e) = save_principal_id(&response.principal) {
-                                                println!("Failed to save principal ID: {}", e);
-                                            }
-                                        } else {
-                                            println!("Failed to register node with canister");
-                                        }
-                                    }
-                                    Err(e) => println!("Error registering node: {}", e),
-                                }
-                            }
-                        }
-                        
                         println!("Local Multiaddr: {}/p2p/{}", address, peer_id);
-                        println!("Port: {}", port);
                     }
                     SwarmEvent::Behaviour(event) => println!("{event:?}"),
                     SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
@@ -266,28 +256,31 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
             _ = heartbeat_interval.tick() => {
-                if registered {
-                    if let Some(public_ip) = get_public_ip().await {
-                        let multiaddr = format!("/ip4/{}/tcp/{}/p2p/{}", public_ip, config.node.port, peer_id);
-                        
-                        // Send heartbeat with current information
-                        match send_heartbeat(
-                            &agent,
-                            &canister_id,
-                            node_principal,
-                            &config.node.name,
-                            &multiaddr,
-                        ).await {
-                            Ok(success) => {
-                                if success {
-                                    println!("Heartbeat sent successfully");
-                                    last_ip = public_ip.to_string();
-                                } else {
-                                    println!("Heartbeat failed, will retry in next interval");
-                                }
+                if let Some(public_ip) = get_public_ip().await {
+                    let multiaddr = format!("/ip4/{}/tcp/{}/p2p/{}", public_ip, config.node.port, peer_id);
+                    
+                    // Only send heartbeat if IP has changed
+                    if public_ip != last_ip {
+                        println!("IP changed from {} to {}, updating registration", last_ip, public_ip);
+                    }
+                    
+                    // Send heartbeat with current information
+                    match send_heartbeat(
+                        &agent,
+                        &canister_id,
+                        node_principal,
+                        &config.node.name,
+                        &multiaddr,
+                    ).await {
+                        Ok(success) => {
+                            if success {
+                                println!("Heartbeat sent successfully");
+                                last_ip = public_ip;
+                            } else {
+                                println!("Heartbeat failed, will retry in next interval");
                             }
-                            Err(e) => println!("Error sending heartbeat: {}", e),
                         }
+                        Err(e) => println!("Error sending heartbeat: {}", e),
                     }
                 }
             }
