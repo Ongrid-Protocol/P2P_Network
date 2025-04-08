@@ -4,25 +4,23 @@ FROM rust:latest AS builder
 # Install build dependencies (separate layer for better caching)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    pkg-config \
-    libssl-dev \
-    git \
+    ca-certificates \
     cmake \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    git \
+    libssl-dev \
+    pkg-config
 
 # Create non-root user for building
 RUN useradd -m -u 1001 rust
-
 WORKDIR /app
-
-# Create cargo directory and set ownership
-RUN mkdir -p /home/rust/.cargo && \
-    chown -R rust:rust /home/rust/.cargo && \
-    chown -R rust:rust /app
+RUN chown rust:rust /app
 
 # Switch to non-root user
 USER rust
+
+# Create cargo directory and set ownership
+RUN mkdir -p /home/rust/.cargo && \
+    chown -R rust:rust /home/rust/.cargo
 
 # Copy dependency files with explicit ownership
 COPY --chown=rust:rust Cargo.toml Cargo.lock ./
@@ -32,20 +30,19 @@ RUN cat Cargo.toml
 
 # Create dummy src for dependency caching
 RUN mkdir -p src && \
-    echo 'fn main() { println!("dummy"); }' > src/main.rs && \
-    cat src/main.rs
+    echo 'fn main() { println!("dummy"); }' > src/main.rs
 
 # First build - show output directly
 RUN RUST_LOG=debug \
     RUST_BACKTRACE=full \
-    cargo build --release -vv || (find . -type f -name "*.stderr" -exec cat {} \; && exit 1)
+    cargo build --release -vv
 
 # Clean up dummy build
 RUN rm -f target/release/deps/p2p*
 
 # Copy the entire src directory and config
 COPY --chown=rust:rust src ./src/
-COPY --chown=rust:rust config.yaml ./
+COPY --chown=rust:rust identities ./identities/
 
 # Debug: List contents to verify files
 RUN ls -la && \
@@ -55,7 +52,7 @@ RUN ls -la && \
 # Final build with full output
 RUN RUST_LOG=debug \
     RUST_BACKTRACE=full \
-    cargo build --release -vv || (find . -type f -name "*.stderr" -exec cat {} \; && exit 1)
+    cargo build --release -vv || (find . -type f -name "*.rs" -exec cat {} \;)
 
 # Stage 2: Runtime environment
 FROM rust:latest
@@ -66,12 +63,7 @@ RUN useradd -m -u 1001 app
 # Install runtime dependencies and logging tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libssl-dev \
-    ca-certificates \
-    tini \
-    procps \
-    logrotate \
-    && rm -rf /var/lib/apt/lists/* \
-    && apt-get clean
+    ca-certificates
 
 WORKDIR /app
 
@@ -94,7 +86,7 @@ EOF
 
 # Copy built binary and config
 COPY --from=builder /app/target/release/p2p .
-COPY --from=builder /app/config.yaml .
+COPY --from=builder /app/identities ./identities/
 
 # Set proper permissions
 RUN chown -R app:app /app && \
@@ -106,10 +98,10 @@ USER app
 
 # Environment variables
 ENV RUST_LOG=debug
-ENV LOG_DIR=/app/logs
-
-# Use tini as init system
-ENTRYPOINT ["/usr/bin/tini", "--"]
+ENV RUST_BACKTRACE=full
 
 # Start the application with logging
-CMD ["sh", "-c", "ls -la && pwd && ./p2p"]
+CMD cp identities/${NODE_NAME}_config.yaml config.yaml && \
+    ls -la && \
+    pwd && \
+    exec ./p2p

@@ -1,10 +1,10 @@
 node:
   name: "node5"
-  port: 4005
-  private_key: "2447585fa0b58094e09a682aeb36fc59033f3a0210246ddbd089e472891f0776"
+  port: 33337
+  private_key: "58e35daf63338dc3ebf71be2e99e7c6b14e86fc58cb5b40dacb9f6ffa310d169"
   ic:
     network: "local"
-    canister_id: ""
+    canister_id: "c5kvi-uuaaa-aaaaa-qaaia-cai"
     is_local: true
-    url: "http://ic_replica:4943"
+    url: "http://192.168.1.60:49517"
   peer_nodes: []

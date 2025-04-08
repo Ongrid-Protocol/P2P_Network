@@ -7,15 +7,121 @@ services:
       dockerfile: Dockerfile
     volumes:
       - node1_data:/app/data
-    ports:
-      - "4001:4001"
     environment:
       - NODE_NAME=node1
       - RUST_LOG=debug
     network_mode: "host"
 
+  node2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - node2_data:/app/data
+    environment:
+      - NODE_NAME=node2
+      - RUST_LOG=debug
+    network_mode: "host"
+
+  node3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - node3_data:/app/data
+    environment:
+      - NODE_NAME=node3
+      - RUST_LOG=debug
+    network_mode: "host"
+
+  node4:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - node4_data:/app/data
+    environment:
+      - NODE_NAME=node4
+      - RUST_LOG=debug
+    network_mode: "host"
+
+  node5:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - node5_data:/app/data
+    environment:
+      - NODE_NAME=node5
+      - RUST_LOG=debug
+    network_mode: "host"
+
+  node6:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - node6_data:/app/data
+    environment:
+      - NODE_NAME=node6
+      - RUST_LOG=debug
+    network_mode: "host"
+
+  node7:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - node7_data:/app/data
+    environment:
+      - NODE_NAME=node7
+      - RUST_LOG=debug
+    network_mode: "host"
+
+  node8:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - node8_data:/app/data
+    environment:
+      - NODE_NAME=node8
+      - RUST_LOG=debug
+    network_mode: "host"
+
+  node9:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - node9_data:/app/data
+    environment:
+      - NODE_NAME=node9
+      - RUST_LOG=debug
+    network_mode: "host"
+
+  node10:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - node10_data:/app/data
+    environment:
+      - NODE_NAME=node10
+      - RUST_LOG=debug
+    network_mode: "host"
+
 volumes:
   node1_data:
+  node2_data:
+  node3_data:
+  node4_data:
+  node5_data:
+  node6_data:
+  node7_data:
+  node8_data:
+  node9_data:
+  node10_data:
   ic_state:
 
 networks:
