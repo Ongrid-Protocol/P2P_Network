@@ -58,7 +58,7 @@ RUN RUST_LOG=debug \
     cargo build --release -vv || (find . -type f -name "*.stderr" -exec cat {} \; && exit 1)
 
 # Stage 2: Runtime environment
-FROM debian:bullseye-slim
+FROM rust:latest
 
 # Create non-root user for running
 RUN useradd -m -u 1001 app
@@ -95,26 +95,21 @@ EOF
 # Copy built binary and config
 COPY --from=builder /app/target/release/p2p .
 COPY --from=builder /app/config.yaml .
-COPY start_nodes.sh .
 
 # Set proper permissions
 RUN chown -R app:app /app && \
     chmod -R 755 /app && \
-    chmod +x start_nodes.sh
+    ls -la /app
 
 # Switch to non-root user
 USER app
 
 # Environment variables
-ENV RUST_LOG=info
+ENV RUST_LOG=debug
 ENV LOG_DIR=/app/logs
-
-# Health check with logging
-HEALTHCHECK --interval=30s --timeout=3s \
-    CMD ps aux | grep p2p | grep -v grep > /app/logs/healthcheck.log 2>&1 || exit 1
 
 # Use tini as init system
 ENTRYPOINT ["/usr/bin/tini", "--"]
 
 # Start the application with logging
-CMD ["sh", "-c", "exec ./start_nodes.sh > /app/logs/p2p.log 2>&1"]
+CMD ["sh", "-c", "ls -la && pwd && ./p2p"]

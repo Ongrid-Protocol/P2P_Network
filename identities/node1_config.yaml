@@ -4,7 +4,7 @@ node:
   private_key: "26b6415b6ab4db09e12471ff864e6c10dd42fd954e60103a1418f80dfc5c4cbc"
   ic:
     network: "local"
-    canister_id: ""
+    canister_id: "c5kvi-uuaaa-aaaaa-qaaia-cai"
     is_local: true
-    url: "http://ic_replica:4943"
+    url: "http://localhost:49517"
   peer_nodes: []

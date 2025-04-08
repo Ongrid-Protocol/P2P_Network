@@ -6,7 +6,6 @@ services:
       context: .
       dockerfile: Dockerfile
     volumes:
-      - ./identities/node1_config.yaml:/app/config.yaml
       - node1_data:/app/data
     ports:
       - "4001:4001"

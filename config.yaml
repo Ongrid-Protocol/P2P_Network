@@ -6,4 +6,5 @@ node:
     network: "local"  # or "mainnet"
     canister_id: "c5kvi-uuaaa-aaaaa-qaaia-cai"  # Bootstrap node canister ID
     is_local: true  # Set to false for mainnet
+    url: "http://192.168.1.60:49517"
   peer_nodes: []  # Will be populated from the canister

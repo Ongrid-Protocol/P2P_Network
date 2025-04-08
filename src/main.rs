@@ -27,6 +27,7 @@ struct ICSettings {
     network: String,
     canister_id: String,
     is_local: bool,
+    url: String,
 }
 
 #[derive(CandidType, CandidDeserialize, Debug)]
@@ -154,15 +155,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Create IC agent with proper configuration
     let agent = Agent::builder()
-        .with_url(if config.node.ic.is_local {
-            "http://localhost:4943"
-        } else {
-            match config.node.ic.network.as_str() {
-                "mainnet" => "https://ic0.app",
-                "testnet" => "https://icp0.io",
-                _ => "http://localhost:4943"
-            }
-        })
+        .with_url(&config.node.ic.url)
         .build()?;
 
     // Always fetch root key for local development
