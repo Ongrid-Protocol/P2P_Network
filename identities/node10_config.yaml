@@ -1,0 +1,10 @@
+node:
+  name: "node10"
+  port: 4010
+  private_key: "1ba8bc17ab92fc1b11da67f144a10c6f6407cceea6badfadaddd9ef9429b7bf2"
+  ic:
+    network: "local"
+    canister_id: ""
+    is_local: true
+    url: "http://ic_replica:4943"
+  peer_nodes: []

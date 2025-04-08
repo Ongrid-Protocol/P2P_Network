@@ -1,15 +1,16 @@
 [package]
 name = "p2p"
 version = "0.1.0"
-edition = "2024"
+edition = "2021"
 
 [dependencies]
-libp2p = { version = "0.52", features = ["tcp", "noise", "yamux", "ping", "tokio"] }
+libp2p = { version = "0.52", features = ["tcp", "noise", "yamux", "ping", "tokio", "request-response", "macros"] }
 futures = "0.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
+serde_json = "1.0"
 tokio = { version = "1.0", features = ["full"] }
 ed25519-dalek = "1.0"
 sha2 = "0.10"

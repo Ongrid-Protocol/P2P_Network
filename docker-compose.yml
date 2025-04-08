@@ -1,0 +1,24 @@
+version: '3.8'
+
+services:
+  node1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./identities/node1_config.yaml:/app/config.yaml
+      - node1_data:/app/data
+    ports:
+      - "4001:4001"
+    environment:
+      - NODE_NAME=node1
+      - RUST_LOG=debug
+    network_mode: "host"
+
+volumes:
+  node1_data:
+  ic_state:
+
+networks:
+  p2p_network:
+    driver: bridge 

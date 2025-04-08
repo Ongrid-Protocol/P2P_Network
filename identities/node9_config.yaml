@@ -1,0 +1,10 @@
+node:
+  name: "node9"
+  port: 4009
+  private_key: "da684abfbe7c26eed0b4d0026555e0fd2e59cac519d941e4b3bdc63b6cc25b42"
+  ic:
+    network: "local"
+    canister_id: ""
+    is_local: true
+    url: "http://ic_replica:4943"
+  peer_nodes: []

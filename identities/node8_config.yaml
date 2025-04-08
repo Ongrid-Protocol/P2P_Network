@@ -1,0 +1,10 @@
+node:
+  name: "node8"
+  port: 4008
+  private_key: "7184dd5d359e36d2ba6c6bc37b2d8aeaf8b4ae595fa0e858d8d76963ae3dc97a"
+  ic:
+    network: "local"
+    canister_id: ""
+    is_local: true
+    url: "http://ic_replica:4943"
+  peer_nodes: []

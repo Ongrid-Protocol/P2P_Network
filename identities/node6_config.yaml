@@ -1,0 +1,10 @@
+node:
+  name: "node6"
+  port: 4006
+  private_key: "fade52c385148ec6956707819467ba1b4a190325c3d6ce42d3b72537e8a15c10"
+  ic:
+    network: "local"
+    canister_id: ""
+    is_local: true
+    url: "http://ic_replica:4943"
+  peer_nodes: []
