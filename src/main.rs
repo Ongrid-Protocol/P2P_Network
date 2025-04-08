@@ -51,10 +51,11 @@ async fn get_public_ip() -> Option<String> {
     }
 }
 
-async fn register_node(agent: &Agent, canister_id: &Principal, name: &str, multiaddr: &str) -> Result<RegisterResponse, Box<dyn Error>> {
+async fn register_node(agent: &Agent, canister_id: &Principal, node_principal: Principal, name: &str, multiaddr: &str) -> Result<RegisterResponse, Box<dyn Error>> {
     let response = agent
         .update(canister_id, "register_node")
         .with_arg(candid::encode_args((
+            node_principal,
             name,
             multiaddr,
         ))?)
@@ -147,10 +148,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let peer_id = PeerId::from(id_keys.public());
     println!("Peer ID: {}", peer_id);
 
-    // Create agent with authenticated identity
+    // Generate Principal ID from the node's private key bytes
+    let node_principal = Principal::self_authenticating(&private_key_bytes);
+    println!("Node Principal ID: {}", node_principal);
+
+    // Create IC agent with proper configuration
     let agent = Agent::builder()
-        .with_url("http://localhost:4943")  // Local IC replica
+        .with_url(if config.node.ic.is_local {
+            "http://localhost:4943"
+        } else {
+            match config.node.ic.network.as_str() {
+                "mainnet" => "https://ic0.app",
+                "testnet" => "https://icp0.io",
+                _ => "http://localhost:4943"
+            }
+        })
         .build()?;
+
+    // Always fetch root key for local development
+    if config.node.ic.is_local {
+        agent.fetch_root_key().await?;
+    }
 
     // Get the canister ID from config
     let canister_id = Principal::from_text(&config.node.ic.canister_id)?;
@@ -184,57 +202,95 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let mut registered = false;
+    let mut last_ip = String::new();
+    let mut heartbeat_interval = interval(Duration::from_secs(30));
 
     loop {
-        match swarm.select_next_some().await {
-            SwarmEvent::NewListenAddr { address, .. } => {
-                println!("\nNode Information:");
-                println!("Name: {}", config.node.name);
-                println!("PeerId: {}", peer_id);
-                
-                // Extract the port from the address
-                let port = address.to_string()
-                    .split('/')
-                    .find(|s| s.parse::<u16>().is_ok())
-                    .and_then(|s| s.parse::<u16>().ok())
-                    .unwrap_or(config.node.port);
+        tokio::select! {
+            event = swarm.select_next_some() => {
+                match event {
+                    SwarmEvent::NewListenAddr { address, .. } => {
+                        println!("\nNode Information:");
+                        println!("Name: {}", config.node.name);
+                        println!("PeerId: {}", peer_id);
+                        
+                        // Extract the port from the address
+                        let port = address.to_string()
+                            .split('/')
+                            .find(|s| s.parse::<u16>().is_ok())
+                            .and_then(|s| s.parse::<u16>().ok())
+                            .unwrap_or(config.node.port);
 
-                // Get and display the public IP
-                if let Some(public_ip) = get_public_ip().await {
-                    let multiaddr = format!("/ip4/{}/tcp/{}/p2p/{}", public_ip, port, peer_id);
-                    println!("Public Multiaddr: {}", multiaddr);
+                        // Get and display the public IP
+                        if let Some(public_ip) = get_public_ip().await {
+                            let multiaddr = format!("/ip4/{}/tcp/{}/p2p/{}", public_ip, port, peer_id);
+                            println!("Public Multiaddr: {}", multiaddr);
 
-                    // Register node if not already registered
-                    if !registered {
-                        match register_node(
+                            // Only register if we haven't registered before
+                            if !registered {
+                                match register_node(
+                                    &agent,
+                                    &canister_id,
+                                    node_principal,
+                                    &config.node.name,
+                                    &multiaddr,
+                                ).await {
+                                    Ok(response) => {
+                                        if response.success {
+                                            println!("Successfully registered node with canister");
+                                            println!("Assigned Principal ID: {}", response.principal);
+                                            registered = true;
+                                            last_ip = public_ip.to_string();
+                                            // Save the principal ID for future use
+                                            if let Err(e) = save_principal_id(&response.principal) {
+                                                println!("Failed to save principal ID: {}", e);
+                                            }
+                                        } else {
+                                            println!("Failed to register node with canister");
+                                        }
+                                    }
+                                    Err(e) => println!("Error registering node: {}", e),
+                                }
+                            }
+                        }
+                        
+                        println!("Local Multiaddr: {}/p2p/{}", address, peer_id);
+                        println!("Port: {}", port);
+                    }
+                    SwarmEvent::Behaviour(event) => println!("{event:?}"),
+                    SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
+                        println!("Connection established with peer: {}", peer_id);
+                        println!("Connected via: {}", endpoint.get_remote_address());
+                    }
+                    _ => {}
+                }
+            }
+            _ = heartbeat_interval.tick() => {
+                if registered {
+                    if let Some(public_ip) = get_public_ip().await {
+                        let multiaddr = format!("/ip4/{}/tcp/{}/p2p/{}", public_ip, config.node.port, peer_id);
+                        
+                        // Send heartbeat with current information
+                        match send_heartbeat(
                             &agent,
                             &canister_id,
+                            node_principal,
                             &config.node.name,
                             &multiaddr,
                         ).await {
-                            Ok(response) => {
-                                if response.success {
-                                    println!("Successfully registered node with canister");
-                                    println!("Assigned Principal ID: {}", response.principal);
-                                    registered = true;
+                            Ok(success) => {
+                                if success {
+                                    println!("Heartbeat sent successfully");
+                                    last_ip = public_ip.to_string();
                                 } else {
-                                    println!("Failed to register node with canister");
+                                    println!("Heartbeat failed, will retry in next interval");
                                 }
                             }
-                            Err(e) => println!("Error registering node: {}", e),
+                            Err(e) => println!("Error sending heartbeat: {}", e),
                         }
                     }
                 }
-                
-                println!("Local Multiaddr: {}/p2p/{}", address, peer_id);
-                println!("Port: {}", port);
             }
-            SwarmEvent::Behaviour(event) => println!("{event:?}"),
-            SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
-                println!("Connection established with peer: {}", peer_id);
-                println!("Connected via: {}", endpoint.get_remote_address());
-            }
-            _ => {}
         }
     }
 }
