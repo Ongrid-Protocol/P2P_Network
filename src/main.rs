@@ -1,4 +1,4 @@
-use std::{error::Error, time::Duration, fs::{File, OpenOptions}, path::Path, io::{Read, Write}};
+use std::{error::Error, time::Duration, fs::{File, OpenOptions}, path::Path, io::{Read, Write}, collections::HashMap};
 use serde::{Deserialize, Serialize};
 use futures::prelude::*;
 use libp2p::{identity, noise, ping, swarm::SwarmEvent, tcp, yamux, Multiaddr, PeerId};
@@ -42,6 +42,18 @@ struct Node {
 struct RegisterResponse {
     success: bool,
     principal: Principal,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Debug)]
+struct VerificationRequest {
+    message: Vec<u8>,
+    requesting_principal: Principal,
+}
+
+#[derive(CandidType, Serialize, Deserialize, Debug)]
+struct VerificationResponse {
+    signature: Vec<u8>,
+    signer_principal: Principal,
 }
 
 async fn get_public_ip() -> Option<String> {
@@ -133,6 +145,33 @@ fn load_principal_id() -> Result<Option<Principal>, Box<dyn Error>> {
     Ok(Some(principal))
 }
 
+async fn request_signature(agent: &Agent, canister_id: &Principal, message: &[u8], requesting_principal: Principal) -> Result<VerificationResponse, Box<dyn Error>> {
+    let request = VerificationRequest {
+        message: message.to_vec(),
+        requesting_principal,
+    };
+
+    let response = agent
+        .update(canister_id, "request_signature")
+        .with_arg(candid::encode_args((request,))?)
+        .call_and_wait()
+        .await?;
+
+    let verification_response: VerificationResponse = candid::decode_one(&response)?;
+    Ok(verification_response)
+}
+
+fn sign_message(message: &[u8], keypair: &identity::Keypair) -> Vec<u8> {
+    keypair.sign(message).expect("Failed to sign message")
+}
+
+fn verify_signature(message: &[u8], signature: &[u8], public_key: &[u8]) -> Result<bool, Box<dyn Error>> {
+    let mut key_bytes = public_key.to_vec();
+    let keypair = identity::Keypair::ed25519_from_bytes(&mut key_bytes)?;
+    let public_key = keypair.public();
+    Ok(public_key.verify(message, signature))
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let _ = tracing_subscriber::fmt()
@@ -176,7 +215,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     };
 
     // Attempt initial registration
-    if let Some(ip) = &initial_ip {
+    if let Some(_ip) = &initial_ip {
         match register_node(
             &agent,
             &canister_id,

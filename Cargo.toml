@@ -2,6 +2,7 @@
 name = "p2p"
 version = "0.1.0"
 edition = "2021"
+default-run = "p2p"
 
 [dependencies]
 libp2p = { version = "0.52", features = ["tcp", "noise", "yamux", "ping", "tokio", "request-response", "macros"] }
@@ -12,14 +13,24 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yaml = "0.9"
 serde_json = "1.0"
 tokio = { version = "1.0", features = ["full"] }
-ed25519-dalek = "1.0"
+ed25519-dalek = "1.0.1"
 sha2 = "0.10"
 candid = "0.9"
 ic-cdk = "0.11"
 public-ip = "0.2"
 ic-agent = "0.29"
 hex = "0.4"
+rand = "0.7.3"
+clap = { version = "4.4", features = ["derive"] }
 
 [[bin]]
 name = "list_active_peers"
 path = "src/bin/list_active_peers.rs"
+
+[[bin]]
+name = "p2p"
+path = "src/main.rs"
+
+[[bin]]
+name = "verify_message"
+path = "src/bin/verify_message.rs"
