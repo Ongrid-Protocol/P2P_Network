@@ -1,14 +1,15 @@
 # Stage 1: Build environment
 FROM rust:latest AS builder
 
-# Install build dependencies (separate layer for better caching)
+# Install build dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     ca-certificates \
     cmake \
     git \
     libssl-dev \
-    pkg-config
+    pkg-config && \
+    rm -rf /var/lib/apt/lists/*
 
 # Create non-root user for building
 RUN useradd -m -u 1001 rust
@@ -25,45 +26,35 @@ RUN mkdir -p /home/rust/.cargo && \
 # Copy dependency files with explicit ownership
 COPY --chown=rust:rust Cargo.toml Cargo.lock ./
 
-# Debug: Show contents of Cargo.toml
-RUN cat Cargo.toml
+# Create dummy src and src/bin for dependency caching
+RUN mkdir -p src/bin && \
+    echo 'fn main() { println!("dummy"); }' > src/main.rs && \
+    echo 'fn main() { println!("dummy bin"); }' > src/bin/dummy.rs
 
-# Create dummy src for dependency caching
-RUN mkdir -p src && \
-    echo 'fn main() { println!("dummy"); }' > src/main.rs
-
-# First build - show output directly
-RUN RUST_LOG=debug \
-    RUST_BACKTRACE=full \
-    cargo build --release -vv
+# First build for dependency caching
+RUN cargo build --release
 
 # Clean up dummy build
 RUN rm -f target/release/deps/p2p*
 
-# Copy the entire src directory and config
+# Copy the source files
 COPY --chown=rust:rust src ./src/
 COPY --chown=rust:rust identities ./identities/
 
-# Debug: List contents to verify files
-RUN ls -la && \
-    ls -la src/ && \
-    cat src/main.rs | head -n 5
-
-# Final build with full output
-RUN RUST_LOG=debug \
-    RUST_BACKTRACE=full \
-    cargo build --release -vv || (find . -type f -name "*.rs" -exec cat {} \;)
+# Final build
+RUN cargo build --release && \
+    strip target/release/p2p
 
 # Stage 2: Runtime environment
 FROM rust:latest
 
 # Create non-root user for running
-RUN useradd -m -u 1001 app
-
-# Install runtime dependencies and logging tools
-RUN apt-get update && apt-get install -y --no-install-recommends \
+RUN useradd -m -u 1001 app && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
     libssl-dev \
-    ca-certificates
+    ca-certificates && \
+    rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -90,18 +81,14 @@ COPY --from=builder /app/identities ./identities/
 
 # Set proper permissions
 RUN chown -R app:app /app && \
-    chmod -R 755 /app && \
-    ls -la /app
+    chmod -R 755 /app
 
 # Switch to non-root user
 USER app
 
 # Environment variables
-ENV RUST_LOG=debug
-ENV RUST_BACKTRACE=full
+ENV RUST_LOG=info
 
-# Start the application with logging
+# Start the application
 CMD cp identities/${NODE_NAME}_config.yaml config.yaml && \
-    ls -la && \
-    pwd && \
     exec ./p2p

@@ -23,14 +23,8 @@ hex = "0.4"
 rand = "0.7.3"
 clap = { version = "4.4", features = ["derive"] }
 
-[[bin]]
-name = "list_active_peers"
-path = "src/bin/list_active_peers.rs"
 
 [[bin]]
 name = "p2p"
 path = "src/main.rs"
 
-[[bin]]
-name = "verify_message"
-path = "src/bin/verify_message.rs"
