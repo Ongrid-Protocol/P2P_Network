@@ -1,0 +1,10 @@
+node:
+  name: "node9"
+  port: 33343
+  private_key: "30c78d2f43443e8273a6c8effa666f89c41ae8e677fd8a9b0685c087707e3f92"
+  ic:
+    network: "local"
+    canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
+    is_local: true
+    url: "http://192.168.100.172:49517"
+  peer_nodes: []
