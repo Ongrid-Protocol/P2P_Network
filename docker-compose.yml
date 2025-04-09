@@ -10,7 +10,9 @@ services:
     environment:
       - NODE_NAME=node1
       - RUST_LOG=debug
-    network_mode: "host"
+      - IC_URL=http://192.168.100.172:49517
+    networks:
+      - p2p_network
 
   node2:
     build:
@@ -21,7 +23,9 @@ services:
     environment:
       - NODE_NAME=node2
       - RUST_LOG=debug
-    network_mode: "host"
+      - IC_URL=http://192.168.100.172:49517
+    networks:
+      - p2p_network
 
   node3:
     build:
@@ -32,7 +36,9 @@ services:
     environment:
       - NODE_NAME=node3
       - RUST_LOG=debug
-    network_mode: "host"
+      - IC_URL=http://192.168.100.172:49517
+    networks:
+      - p2p_network
 
   node4:
     build:
@@ -43,7 +49,9 @@ services:
     environment:
       - NODE_NAME=node4
       - RUST_LOG=debug
-    network_mode: "host"
+      - IC_URL=http://192.168.100.172:49517
+    networks:
+      - p2p_network
 
   node5:
     build:
@@ -54,7 +62,9 @@ services:
     environment:
       - NODE_NAME=node5
       - RUST_LOG=debug
-    network_mode: "host"
+      - IC_URL=http://192.168.100.172:49517
+    networks:
+      - p2p_network
 
   node6:
     build:
@@ -65,7 +75,9 @@ services:
     environment:
       - NODE_NAME=node6
       - RUST_LOG=debug
-    network_mode: "host"
+      - IC_URL=http://192.168.100.172:49517
+    networks:
+      - p2p_network
 
   node7:
     build:
@@ -76,7 +88,9 @@ services:
     environment:
       - NODE_NAME=node7
       - RUST_LOG=debug
-    network_mode: "host"
+      - IC_URL=http://192.168.100.172:49517
+    networks:
+      - p2p_network
 
   node8:
     build:
@@ -87,7 +101,9 @@ services:
     environment:
       - NODE_NAME=node8
       - RUST_LOG=debug
-    network_mode: "host"
+      - IC_URL=http://192.168.100.172:49517
+    networks:
+      - p2p_network
 
   node9:
     build:
@@ -98,7 +114,9 @@ services:
     environment:
       - NODE_NAME=node9
       - RUST_LOG=debug
-    network_mode: "host"
+      - IC_URL=http://192.168.100.172:49517
+    networks:
+      - p2p_network
 
   node10:
     build:
@@ -109,7 +127,9 @@ services:
     environment:
       - NODE_NAME=node10
       - RUST_LOG=debug
-    network_mode: "host"
+      - IC_URL=http://192.168.100.172:49517
+    networks:
+      - p2p_network
 
 volumes:
   node1_data:

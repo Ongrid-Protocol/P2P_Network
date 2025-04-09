@@ -1,10 +1,10 @@
 node:
   name: "node1"
   port: 33333
-  private_key: "3d4cf5bdf6320c5638b35668f06da7a19e96ecbfe4fdae8d45d703027aee2573"
+  private_key: "80a516b0b011ec243b680cfc605f976e60923645fbb963915e135e918f9e2f26"
   ic:
     network: "local"
     canister_id: "c5kvi-uuaaa-aaaaa-qaaia-cai"
     is_local: true
-    url: "http://192.168.1.60:49517"
+    url: "http://192.168.100.172:49517"
   peer_nodes: []

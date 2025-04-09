@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Base port number
-BASE_PORT=33333
+BASE_PORT=33335
 
 # Create identities directory if it doesn't exist
 mkdir -p identities
@@ -19,9 +19,9 @@ node:
   private_key: "${PRIVATE_KEY}"
   ic:
     network: "local"
-    canister_id: "c5kvi-uuaaa-aaaaa-qaaia-cai"
+    canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
     is_local: true
-    url: "http://192.168.1.60:49517"
+    url: "http://192.168.100.172:49517"
   peer_nodes: []
 EOL
 

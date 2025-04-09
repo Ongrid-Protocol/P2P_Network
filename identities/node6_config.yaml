@@ -1,10 +1,10 @@
 node:
   name: "node6"
-  port: 33338
-  private_key: "487603a7851f96a361d86a284802be3df4a3b951a7c2c40ed2026825082701a1"
+  port: 33340
+  private_key: "e8d209055abb6ef5650b99514ef885194a9bf3e0967dff3dba29d52dc2272f66"
   ic:
     network: "local"
-    canister_id: "c5kvi-uuaaa-aaaaa-qaaia-cai"
+    canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
     is_local: true
-    url: "http://192.168.1.60:49517"
+    url: "http://192.168.100.172:49517"
   peer_nodes: []

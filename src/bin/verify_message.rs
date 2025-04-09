@@ -1,4 +1,4 @@
-use std::{error::Error, collections::HashMap, time::Duration};
+use std::{error::Error, collections::HashMap, time::Duration, fs::{File, OpenOptions}, path::Path, io::{Read, Write}};
 use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::path::Path;
@@ -36,6 +36,8 @@ struct NodeConfig {
 
 #[derive(Debug, Deserialize)]
 struct NodeSettings {
+    name: String,
+    port: u16,
     ic: ICSettings,
     private_key: String,
 }
@@ -66,6 +68,56 @@ struct VerificationRequest {
 struct VerificationResponse {
     signature: Vec<u8>,
     signer_principal: Principal,
+}
+
+#[derive(CandidType, Deserialize, Debug)]
+struct RegisterResponse {
+    success: bool,
+    principal: Principal,
+}
+
+async fn register_node(agent: &Agent, canister_id: &Principal, node_principal: Principal, name: &str, multiaddr: &str) -> Result<RegisterResponse, Box<dyn Error>> {
+    let response = agent
+        .update(canister_id, "register_node")
+        .with_arg(candid::encode_args((
+            name,
+            multiaddr,
+            node_principal,
+        ))?)
+        .call_and_wait()
+        .await?;
+
+    let result: RegisterResponse = candid::decode_one(&response)?;
+    Ok(result)
+}
+
+fn save_principal_id(principal: &Principal) -> Result<(), Box<dyn Error>> {
+    let mut file = OpenOptions::new()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open("node_principal.txt")?;
+    
+    file.write_all(principal.to_string().as_bytes())?;
+    Ok(())
+}
+
+fn load_principal_id() -> Result<Option<Principal>, Box<dyn Error>> {
+    let path = Path::new("node_principal.txt");
+    if !path.exists() {
+        return Ok(None);
+    }
+
+    let mut file = File::open(path)?;
+    let mut contents = String::new();
+    file.read_to_string(&mut contents)?;
+    
+    if contents.is_empty() {
+        return Ok(None);
+    }
+
+    let principal = Principal::from_text(contents.trim())?;
+    Ok(Some(principal))
 }
 
 async fn get_active_nodes(agent: &Agent, canister_id: &Principal) -> Result<Vec<Node>, Box<dyn Error>> {
@@ -207,6 +259,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let canister_id = Principal::from_text(&config.node.ic.canister_id)
         .map_err(|e| format!("Failed to parse canister ID: {}", e))?;
     
+    // Check if we have a saved principal ID
+    let saved_principal = load_principal_id()?;
+    let node_principal = if let Some(principal) = saved_principal {
+        println!("Using saved principal ID: {}", principal);
+        principal
+    } else {
+        // Register the node if we don't have a saved principal
+        println!("No saved principal ID found. Registering node...");
+        let multiaddr = format!("/ip4/127.0.0.1/tcp/{}/p2p/{}", config.node.port, keypair.public().to_peer_id());
+        match register_node(&agent, &canister_id, my_principal, &config.node.name, &multiaddr).await {
+            Ok(response) => {
+                if response.success {
+                    println!("Successfully registered node with canister");
+                    println!("Assigned Principal ID: {}", response.principal);
+                    if let Err(e) = save_principal_id(&response.principal) {
+                        println!("Failed to save principal ID: {}", e);
+                    }
+                    response.principal
+                } else {
+                    return Err("Failed to register node with canister".into());
+                }
+            }
+            Err(e) => return Err(format!("Error registering node: {}", e).into()),
+        }
+    };
+    
     // Get the message to be signed
     let message = args.message
         .map(|m| m.into_bytes())
@@ -227,7 +305,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Create futures for all signature requests
     let signature_futures: Vec<_> = nodes.iter()
-        .map(|node| collect_signature(&agent, &canister_id, node, &message, my_principal))
+        .map(|node| collect_signature(&agent, &canister_id, node, &message, node_principal))
         .collect();
 
     // Wait for all signatures with timeout
@@ -248,16 +326,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Check if we have enough signatures
     if signatures.len() >= args.min_signatures {
-        println!("\nMessage verification successful!");
-        println!("Verified by {} nodes:", signatures.len());
+        println!("\nSuccessfully collected {} signatures:", signatures.len());
         for (principal, _) in &signatures {
-            if let Some(node) = nodes.iter().find(|n| n.principal == *principal) {
-                println!("- {}", node.name);
-            }
+            println!("- {}", principal);
         }
     } else {
-        println!("\nFailed to collect enough valid signatures");
-        println!("Only received {} valid signatures, need at least {}", 
+        println!("\nFailed to collect enough signatures. Got {} out of {} required.", 
             signatures.len(), args.min_signatures);
     }
 

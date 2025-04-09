@@ -1,10 +1,10 @@
 node:
   name: "HeroNode"
-  port: 33333
+  port: 33334
   private_key: "e51ec3eeeb27b2dba9458edf23bbb80bc64d1c19a311ad41877939a4606cfb8d"  # Example key, replace with your own
   ic:
     network: "local"  # or "mainnet"
-    canister_id: "c5kvi-uuaaa-aaaaa-qaaia-cai"  # Bootstrap node canister ID
+    canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"  # Bootstrap node canister ID
     is_local: true  # Set to false for mainnet
-    url: "http://192.168.1.60:49517"
+    url: "http://192.168.100.172:49517"  # Using local network IP
   peer_nodes: []  # Will be populated from the canister
