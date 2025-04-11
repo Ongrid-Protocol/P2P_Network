@@ -22,7 +22,7 @@ node:
     network: "local"
     canister_id: "${CANISTER_ID}"
     is_local: true
-    url: "http://192.168.100.172:49517"  # Using local network IP
+    url: "http://127.0.0.1:4943"  # Using local network IP
   peer_nodes: []
 EOF
 

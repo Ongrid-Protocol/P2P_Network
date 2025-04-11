@@ -1,7 +1,5 @@
 use std::{error::Error, collections::HashMap, time::Duration, fs::{File, OpenOptions}, path::Path, io::{Read, Write}};
 use serde::{Deserialize, Serialize};
-use std::fs::File;
-use std::path::Path;
 use ic_agent::{
     Agent, 
     agent::http_transport::ReqwestHttpReplicaV2Transport,

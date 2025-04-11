@@ -1,135 +1,112 @@
 version: '3.8'
 
+# Define the build for the common node image
+x-node-build: &node-build
+  build:
+    context: .
+    dockerfile: Dockerfile
+
 services:
   node1:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    <<: *node-build # Use the common build definition
+    image: p2p-node-image # Standardize image name
     volumes:
       - node1_data:/app/data
     environment:
       - NODE_NAME=node1
       - RUST_LOG=debug
-      - IC_URL=http://192.168.100.172:49517
-    networks:
-      - p2p_network
+      - IC_URL=http://127.0.0.1:4943
+    network_mode: host # Use host network
 
   node2:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: p2p-node-image # Standardize image name
     volumes:
       - node2_data:/app/data
     environment:
       - NODE_NAME=node2
       - RUST_LOG=debug
-      - IC_URL=http://192.168.100.172:49517
-    networks:
-      - p2p_network
+      - IC_URL=http://127.0.0.1:4943
+    network_mode: host # Use host network
 
   node3:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: p2p-node-image # Standardize image name
     volumes:
       - node3_data:/app/data
     environment:
       - NODE_NAME=node3
       - RUST_LOG=debug
-      - IC_URL=http://192.168.100.172:49517
-    networks:
-      - p2p_network
+      - IC_URL=http://127.0.0.1:4943
+    network_mode: host # Use host network
 
   node4:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: p2p-node-image # Standardize image name
     volumes:
       - node4_data:/app/data
     environment:
       - NODE_NAME=node4
       - RUST_LOG=debug
-      - IC_URL=http://192.168.100.172:49517
-    networks:
-      - p2p_network
+      - IC_URL=http://127.0.0.1:4943
+    network_mode: host # Use host network
 
   node5:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: p2p-node-image # Standardize image name
     volumes:
       - node5_data:/app/data
     environment:
       - NODE_NAME=node5
       - RUST_LOG=debug
-      - IC_URL=http://192.168.100.172:49517
-    networks:
-      - p2p_network
+      - IC_URL=http://127.0.0.1:4943
+    network_mode: host # Use host network
 
   node6:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: p2p-node-image # Standardize image name
     volumes:
       - node6_data:/app/data
     environment:
       - NODE_NAME=node6
       - RUST_LOG=debug
-      - IC_URL=http://192.168.100.172:49517
-    networks:
-      - p2p_network
+      - IC_URL=http://127.0.0.1:4943
+    network_mode: host # Use host network
 
   node7:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: p2p-node-image # Standardize image name
     volumes:
       - node7_data:/app/data
     environment:
       - NODE_NAME=node7
       - RUST_LOG=debug
-      - IC_URL=http://192.168.100.172:49517
-    networks:
-      - p2p_network
+      - IC_URL=http://127.0.0.1:4943
+    network_mode: host # Use host network
 
   node8:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: p2p-node-image # Standardize image name
     volumes:
       - node8_data:/app/data
     environment:
       - NODE_NAME=node8
       - RUST_LOG=debug
-      - IC_URL=http://192.168.100.172:49517
-    networks:
-      - p2p_network
+      - IC_URL=http://127.0.0.1:4943
+    network_mode: host # Use host network
 
   node9:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: p2p-node-image # Standardize image name
     volumes:
       - node9_data:/app/data
     environment:
       - NODE_NAME=node9
       - RUST_LOG=debug
-      - IC_URL=http://192.168.100.172:49517
-    networks:
-      - p2p_network
+      - IC_URL=http://127.0.0.1:4943
+    network_mode: host # Use host network
 
   node10:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    image: p2p-node-image # Standardize image name
     volumes:
       - node10_data:/app/data
     environment:
       - NODE_NAME=node10
       - RUST_LOG=debug
-      - IC_URL=http://192.168.100.172:49517
-    networks:
-      - p2p_network
+      - IC_URL=http://127.0.0.1:4943
+    network_mode: host # Use host network
 
 volumes:
   node1_data:
@@ -144,6 +121,4 @@ volumes:
   node10_data:
   ic_state:
 
-networks:
-  p2p_network:
-    driver: bridge 
+# Removed the unused networks section 

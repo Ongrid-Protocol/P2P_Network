@@ -21,7 +21,7 @@ node:
     network: "local"
     canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
     is_local: true
-    url: "http://192.168.100.172:49517"
+    url: "http://127.0.0.1:4943"
   peer_nodes: []
 EOL
 

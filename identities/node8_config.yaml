@@ -1,10 +1,10 @@
 node:
   name: "node8"
-  port: 33342
-  private_key: "70fd1fa5216d0a1e3b1768da0a7e377d556c81dbc4c8ed602444daffa05b795d"
+  port: 4008
+  private_key: "a0b2c4d6e8f0a2b4c6d8e0f1a3b5c7d9e2f4a6b8c0d1e3f5a7b9c2d4e6f8a0b2"
   ic:
     network: "local"
     canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
     is_local: true
-    url: "http://192.168.100.172:49517"
+    url: "http://127.0.0.1:4943"
   peer_nodes: []
