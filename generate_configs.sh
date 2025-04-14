@@ -7,7 +7,7 @@ BASE_PORT=33335
 mkdir -p identities
 
 # Generate config for each node
-for i in {1..10}; do
+for i in {1..20}; do
   PORT=$((BASE_PORT + i - 1))
   # Generate a random private key (32 bytes in hex)
   PRIVATE_KEY=$(openssl rand -hex 32)

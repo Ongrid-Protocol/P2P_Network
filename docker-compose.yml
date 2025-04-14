@@ -99,14 +99,136 @@ services:
     network_mode: host # Use host network
 
   node10:
-    image: p2p-node-image # Standardize image name
+    image: p2p-node-image
     volumes:
       - node10_data:/app/data
     environment:
       - NODE_NAME=node10
       - RUST_LOG=debug
       - IC_URL=http://127.0.0.1:4943
-    network_mode: host # Use host network
+      - NODE_PORT=4010
+    ports:
+      - "4010:4010"
+
+  node11:
+    image: p2p-node-image
+    volumes:
+      - node11_data:/app/data
+    environment:
+      - NODE_NAME=node11
+      - RUST_LOG=debug
+      - IC_URL=http://127.0.0.1:4943
+      - NODE_PORT=4011
+    ports:
+      - "4011:4011"
+
+  node12:
+    image: p2p-node-image
+    volumes:
+      - node12_data:/app/data
+    environment:
+      - NODE_NAME=node12
+      - RUST_LOG=debug
+      - IC_URL=http://127.0.0.1:4943
+      - NODE_PORT=4012
+    ports:
+      - "4012:4012"
+
+  node13:
+    image: p2p-node-image
+    volumes:
+      - node13_data:/app/data
+    environment:
+      - NODE_NAME=node13
+      - RUST_LOG=debug
+      - IC_URL=http://127.0.0.1:4943
+      - NODE_PORT=4013
+    ports:
+      - "4013:4013"
+
+  node14:
+    image: p2p-node-image
+    volumes:
+      - node14_data:/app/data
+    environment:
+      - NODE_NAME=node14
+      - RUST_LOG=debug
+      - IC_URL=http://127.0.0.1:4943
+      - NODE_PORT=4014
+    ports:
+      - "4014:4014"
+
+  node15:
+    image: p2p-node-image
+    volumes:
+      - node15_data:/app/data
+    environment:
+      - NODE_NAME=node15
+      - RUST_LOG=debug
+      - IC_URL=http://127.0.0.1:4943
+      - NODE_PORT=4015
+    ports:
+      - "4015:4015"
+
+  node16:
+    image: p2p-node-image
+    volumes:
+      - node16_data:/app/data
+    environment:
+      - NODE_NAME=node16
+      - RUST_LOG=debug
+      - IC_URL=http://127.0.0.1:4943
+      - NODE_PORT=4016
+    ports:
+      - "4016:4016"
+
+  node17:
+    image: p2p-node-image
+    volumes:
+      - node17_data:/app/data
+    environment:
+      - NODE_NAME=node17
+      - RUST_LOG=debug
+      - IC_URL=http://127.0.0.1:4943
+      - NODE_PORT=4017
+    ports:
+      - "4017:4017"
+
+  node18:
+    image: p2p-node-image
+    volumes:
+      - node18_data:/app/data
+    environment:
+      - NODE_NAME=node18
+      - RUST_LOG=debug
+      - IC_URL=http://127.0.0.1:4943
+      - NODE_PORT=4018
+    ports:
+      - "4018:4018"
+
+  node19:
+    image: p2p-node-image
+    volumes:
+      - node19_data:/app/data
+    environment:
+      - NODE_NAME=node19
+      - RUST_LOG=debug
+      - IC_URL=http://127.0.0.1:4943
+      - NODE_PORT=4019
+    ports:
+      - "4019:4019"
+
+  node20:
+    image: p2p-node-image
+    volumes:
+      - node20_data:/app/data
+    environment:
+      - NODE_NAME=node20
+      - RUST_LOG=debug
+      - IC_URL=http://127.0.0.1:4943
+      - NODE_PORT=4020
+    ports:
+      - "4020:4020"
 
 volumes:
   node1_data:
@@ -119,6 +241,16 @@ volumes:
   node8_data:
   node9_data:
   node10_data:
+  node11_data:
+  node12_data:
+  node13_data:
+  node14_data:
+  node15_data:
+  node16_data:
+  node17_data:
+  node18_data:
+  node19_data:
+  node20_data:
   ic_state:
 
 # Removed the unused networks section 

@@ -1,7 +1,7 @@
 node:
   name: "node3"
-  port: 4003
-  private_key: "f2c1d4e7a0b3e6f9d8c5a7b1e4d0f8a3c6b9e2d5f7c0a4b8d1e6f0c9a4b7d0e1"
+  port: 33337
+  private_key: "57d8bb4076e648ce002e640d8f575de857e31ea624bbedbd62fe36d28e166cec"
   ic:
     network: "local"
     canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"

@@ -1,7 +1,7 @@
 node:
   name: "node10"
-  port: 4010
-  private_key: "e6f8a0b2c4d6e8f0a2b4c6d8e0f1a3b5c7d9e2f4a6b8c0d1e3f5a7b9c2d4e6f8"
+  port: 33344
+  private_key: "f4a1506a0c24a8981a038598e43729e8b1973e2e2461e1c2b387f2efca36c583"
   ic:
     network: "local"
     canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"

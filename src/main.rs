@@ -1,21 +1,14 @@
-use std::{error::Error, hash::{Hash, Hasher},collections::hash_map::DefaultHasher, collections::HashSet, fs::{File, OpenOptions}, path::Path, io::{Read, Write}};
+use std::{error::Error, hash::{Hash, Hasher},collections::hash_map::DefaultHasher, collections::{HashSet, HashMap, VecDeque}, fs::{File, OpenOptions}, path::Path, io::{Read, Write}, env, sync::{Arc, Mutex}, net::Ipv4Addr, time::{SystemTime, UNIX_EPOCH}};
 use serde::{Deserialize, Serialize};
 use futures::prelude::*;
-use libp2p::{identity, noise, ping, gossipsub,mdns,swarm::{SwarmEvent,NetworkBehaviour}, tcp, yamux, Multiaddr, PeerId};
+use libp2p::{identity, noise, ping, gossipsub, mdns, swarm::{SwarmEvent, NetworkBehaviour}, tcp, yamux, Multiaddr, PeerId, multiaddr::Protocol};
 use tracing_subscriber::EnvFilter;
 use ic_agent::{Agent};
 use candid::{CandidType, Principal, Deserialize as CandidDeserialize};
 use tokio::time::{interval, Duration};
-use tokio::io::{self, AsyncBufReadExt};
-use std::net::Ipv4Addr;
-use libp2p::multiaddr::Protocol;
-use std::env;
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
 use sha2::{Sha256, Digest};
 use hex;
 use serde_json;
-use std::time::{SystemTime, UNIX_EPOCH};
 
 // Define the structure for signed messages
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -69,8 +62,9 @@ struct MyBehaviour {
     ping: ping::Behaviour,
 }
 
-// Define shared state type
 type MessageStore = Arc<Mutex<HashMap<String, SignedMessage>>>;
+type VerificationCounter = Arc<Mutex<u64>>;
+type FailedPublishQueue = Arc<Mutex<VecDeque<SignedMessage>>>; // Use VecDeque for FIFO retry
 
 async fn register_node(agent: &Agent, canister_id: &Principal, node_principal: Principal, name: &str, multiaddr: &str) -> Result<RegisterResponse, Box<dyn Error>> {
     let response = agent
@@ -171,55 +165,47 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_env_filter(EnvFilter::from_default_env())
         .try_init();
 
-    // Load configuration
     let config = load_config()?;
     println!("Loaded configuration: {:?}", config);
 
-    // Create libp2p identity from private key
     let private_key_bytes = hex::decode(&config.node.private_key)?;
     let id_keys = identity::Keypair::ed25519_from_bytes(private_key_bytes.clone())?;
     let peer_id = PeerId::from(id_keys.public());
     println!("Peer ID: {}", peer_id);
 
-    // Generate Principal ID from the node's private key bytes
     let node_principal = Principal::self_authenticating(&private_key_bytes);
     println!("Node Principal ID: {}", node_principal);
 
-    // Initialize the shared message store
     let message_store: MessageStore = Arc::new(Mutex::new(HashMap::new()));
+    let verification_counter: VerificationCounter = Arc::new(Mutex::new(0));
+    let failed_publish_queue: FailedPublishQueue = Arc::new(Mutex::new(VecDeque::new()));
 
-    // Read IC URL from environment variable, fall back to config if not set (optional fallback)
     let ic_url = env::var("IC_URL").unwrap_or_else(|_| {
         println!("Warning: IC_URL environment variable not set, using URL from config.yaml");
         config.node.ic.url.clone()
     });
     println!("Using IC URL: {}", ic_url);
 
-    // Create IC agent with proper configuration
     let agent = Agent::builder()
         .with_url(&ic_url)
         .build()?;
 
-    // Always fetch root key for local development
     if config.node.ic.is_local {
         agent.fetch_root_key().await?;
     }
 
-    // Get the canister ID from config
     let canister_id = Principal::from_text(&config.node.ic.canister_id)?;
     println!("Canister ID: {}", canister_id);
 
-    // Construct the multiaddress using 127.0.0.1 and the configured port for local setup
     let local_multiaddr = format!("/ip4/127.0.0.1/tcp/{}/p2p/{}", config.node.port, peer_id);
     println!("Using local multiaddress for registration/heartbeat: {}", local_multiaddr);
 
-    // Attempt initial registration using the local multiaddr
     match register_node(
         &agent,
         &canister_id,
         node_principal,
         &config.node.name,
-        &local_multiaddr, // Use local_multiaddr here
+        &local_multiaddr,
     ).await {
         Ok(response) => {
             if response.success {
@@ -235,23 +221,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Err(e) => println!("Error registering node: {}", e),
     }
 
-    // Fetch active peer nodes from the canister
     let fetched_nodes = fetch_peer_nodes(&agent, &config.node).await?;
     println!("Fetched Peer Nodes from canister: {:?}", fetched_nodes);
 
-    // Filter out own address before further processing
     let active_nodes: Vec<String> = fetched_nodes
         .into_iter()
         .filter(|addr_str| {
             if let Ok(ma) = addr_str.parse::<Multiaddr>() {
                 if let Some(Protocol::P2p(fetched_peer_id)) = ma.iter().last() {
-                    // Keep the address if the fetched peer ID is different from our own
-                    if fetched_peer_id != peer_id { // Compare with own peer_id
+                    if fetched_peer_id != peer_id { 
                         return true;
                     }
                 }
             }
-            // Discard if parsing failed, no peer ID found, or if it's our own ID
             println!("Discarding own address or invalid address: {}", addr_str);
             false
         })
@@ -259,17 +241,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     println!("Filtered Peer Nodes (excluding self): {:?}", active_nodes);
 
-    // Transform the filtered addresses to use localhost if they are external IPs
-    let dialable_node_addrs: Vec<String> = active_nodes.iter().map(|addr_str| { // Use the filtered active_nodes list
+    let dialable_node_addrs: Vec<String> = active_nodes.iter().map(|addr_str| { 
         if let Ok(ma) = addr_str.parse::<Multiaddr>() {
             let components: Vec<_> = ma.iter().collect();
-            // Check if the first component is /ip4/ and it's not loopback/private
             if let Some(Protocol::Ip4(ip)) = components.get(0) {
                 if !ip.is_loopback() && !ip.is_private() {
-                    // Rebuild the address with 127.0.0.1
                     let mut new_ma = Multiaddr::empty();
                     new_ma.push(Protocol::Ip4(Ipv4Addr::LOCALHOST));
-                    // Append the rest of the components (e.g., /tcp/port/p2p/peerid)
                     for component in components.iter().skip(1) {
                         new_ma.push(component.clone());
                     }
@@ -278,7 +256,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
         }
-        // If parsing failed or no transformation needed, return original
         addr_str.clone()
     }).collect();
 
@@ -290,29 +267,23 @@ async fn main() -> Result<(), Box<dyn Error>> {
             yamux::Config::default,
         )?
         .with_behaviour(|key| {
-            // To content-address message, we can take the hash of message and use it as an ID.
             let message_id_fn = |message: &gossipsub::Message| {
                 let mut s = DefaultHasher::new();
                 message.data.hash(&mut s);
                 gossipsub::MessageId::from(s.finish().to_string())
             };
 
-            // Set a custom gossipsub configuration
             let gossipsub_config = gossipsub::ConfigBuilder::default()
-                .heartbeat_interval(Duration::from_secs(10)) // This is set to aid debugging by not cluttering the log space
-                .validation_mode(gossipsub::ValidationMode::Strict) // This sets the kind of message validation. The default is Strict (enforce message
-                // signing)
-                .message_id_fn(message_id_fn) // content-address messages. No two messages of the same content will be propagated.
-                // Explicitly set low mesh thresholds for small networks
-                .mesh_n_low(1)
-                .mesh_n(2)
-                .mesh_n_high(3)
-                // Ensure mesh_outbound_min <= mesh_n_low
-                .mesh_outbound_min(1)
+                .heartbeat_interval(Duration::from_secs(10))
+                .validation_mode(gossipsub::ValidationMode::Strict) 
+                .message_id_fn(message_id_fn) 
+                .mesh_n_low(2) // Increased mesh parameters
+                .mesh_n(4)
+                .mesh_n_high(6)
+                .mesh_outbound_min(2)
                 .build()
-                .map_err(io::Error::other)?; // Use std::io::Error here
+                .map_err(io::Error::other)?;
 
-            // build a gossipsub network behaviour
             let gossipsub = gossipsub::Behaviour::new(
                 gossipsub::MessageAuthenticity::Signed(key.clone()),
                 gossipsub_config,
@@ -321,7 +292,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             let mdns =
                 mdns::tokio::Behaviour::new(mdns::Config::default(), key.public().to_peer_id())?;
 
-            // Configure Ping
             let ping = ping::Behaviour::new(ping::Config::new());
 
             Ok(MyBehaviour { gossipsub, mdns, ping })
@@ -329,24 +299,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(u64::MAX)))
         .build();
 
-    // create a Gossipsub topic
     let topic = gossipsub::IdentTopic::new("testing");
-    // subscribes to our topic
     swarm.behaviour_mut().gossipsub.subscribe(&topic)?;
 
-    // Use configured port
     let listen_addr = format!("/ip4/0.0.0.0/tcp/{}", config.node.port).parse()?;
     swarm.listen_on(listen_addr)?;
 
-    // Connect to active nodes using potentially transformed addresses
-    let mut target_peers = HashSet::new(); // Store PeerIds from active_nodes
-    for addr in &dialable_node_addrs { // Use the transformed list
+    let mut target_peers = HashSet::new(); 
+    for addr in &dialable_node_addrs { 
         if let Ok(remote_addr) = addr.parse::<Multiaddr>() {
             if let Some(libp2p::multiaddr::Protocol::P2p(peer_id)) = remote_addr.iter().last() {
                 target_peers.insert(peer_id);
                 match swarm.dial(remote_addr.clone()) {
                     Ok(_) => {
-                        println!("Dialing active node: {}", addr); // Log the address being dialed
+                        println!("Dialing active node: {}", addr);
                     }
                     Err(e) => println!("Failed to dial {}: {}", addr, e),
                 }
@@ -359,16 +325,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let mut heartbeat_interval = interval(Duration::from_secs(30));
-    let mut signing_request_interval = interval(Duration::from_secs(10));
+    let mut signing_request_interval = interval(Duration::from_secs(10)); 
+    let mut retry_publish_interval = interval(Duration::from_secs(30)); // Added retry interval
 
     println!("Node initialized. Waiting for peers and network events.");
 
-    // --- Clone necessary variables for the loop --- 
     let message_store_clone = message_store.clone();
-    let local_peer_id = peer_id; // Clone peer_id for use in the loop
-    let keypair_clone = id_keys; // Clone keypair if needed for future actual verification
+    let verification_counter_clone = verification_counter.clone();
+    let failed_publish_queue_clone = failed_publish_queue.clone();
+    let local_peer_id = peer_id;
+    let keypair_clone = id_keys;
 
-    // Main event loop
     loop {
         tokio::select! {
             event = swarm.select_next_some() => {
@@ -376,13 +343,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     SwarmEvent::NewListenAddr { address, .. } => {
                         println!("\nNode Information:");
                         println!("Name: {}", config.node.name);
-                        println!("PeerId: {}", peer_id);
-                        println!("Local Multiaddr: {}/p2p/{}", address, peer_id);
+                        println!("PeerId: {}", local_peer_id); // Use cloned local_peer_id
+                        println!("Local Multiaddr: {}/p2p/{}", address, local_peer_id); // Use cloned local_peer_id
                     }
                     SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
                         println!("Connection established with peer: {}", peer_id);
                         println!("Connected via: {}", endpoint.get_remote_address());
-                        // If this is one of the peers from the canister list, add it to gossipsub
                         if target_peers.contains(&peer_id) {
                             println!("Adding pre-configured peer {} to gossipsub explicit peers", peer_id);
                             swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
@@ -406,32 +372,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         message_id: _id,
                         message,
                     })) => {
-                        // Attempt to deserialize as SignedMessage JSON
                         if let Ok(received_message) = serde_json::from_slice::<SignedMessage>(&message.data) {
                             println!("Received SignedMessage: Hash {} from Peer {}", received_message.message_hash, propagation_source);
 
                             let mut store = message_store_clone.lock().unwrap();
                             let message_hash = received_message.message_hash.clone();
+                            let initial_sig_count_before_update = store.get(&message_hash).map_or(0, |m| m.signatures.len());
                             
-                            // Get the entry or insert a new one if we haven't seen this message hash
                             let entry = store.entry(message_hash.clone()).or_insert_with(|| {
                                 println!("Adding new message entry for hash: {}", message_hash);
-                                received_message.clone() // If new, store the received version
+                                received_message.clone() 
                             });
 
-                            // Add the sender's signature (PeerId)
                             let mut needs_republish = false;
                             let sender_peer_id_str = propagation_source.to_string();
 
-                            // Merge signatures from received message into our stored version
                             for sig_peer_id in received_message.signatures {
                                 if entry.signatures.insert(sig_peer_id) {
-                                    // If we added a new signature, mark for potential republish
                                     needs_republish = true; 
                                 }
                             }
                             
-                            // Add sender's signature if not already present (ensures sender is counted)
                             if entry.signatures.insert(sender_peer_id_str) {
                                 needs_republish = true; 
                             }
@@ -440,31 +401,36 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             println!("Signature count for hash {}: {}", message_hash, current_sig_count);
 
                             // Check for verification threshold
-                            if current_sig_count == 3 {
-                                println!("*** MESSAGE VERIFIED ({} signatures): Hash {} ***", current_sig_count, message_hash);
-                                // Could add logic here to stop re-publishing verified messages
-                                needs_republish = false; // Example: Don't republish verified messages
+                            if current_sig_count >= 3 && initial_sig_count_before_update < 3 {
+                                let mut counter = verification_counter_clone.lock().unwrap();
+                                *counter += 1;
+                                println!("*** MESSAGE VERIFIED ({} signatures): Hash {} (Total Verified: {}) ***", current_sig_count, message_hash, *counter);
+                                needs_republish = false; 
+                            } else if current_sig_count >= 3 {
+                                needs_republish = false; // Already verified, no need to republish
                             }
 
-                            // If we added a new signature and haven't reached verification, republish
                             if needs_republish {
                                 println!("Republishing message with updated signatures: Hash {}", message_hash);
-                                match serde_json::to_string(&*entry) { // Republish updated entry
+                                match serde_json::to_string(&*entry) { 
                                     Ok(json_message) => {
                                         if let Err(e) = swarm
                                             .behaviour_mut().gossipsub
                                             .publish(topic.clone(), json_message.as_bytes())
                                         {
-                                            println!("Republish error: {e:?}");
+                                            println!("Republish error: {e:?}. Queuing for retry.");
+                                            // On publish error, queue for retry
+                                            failed_publish_queue_clone.lock().unwrap().push_back(entry.clone());
                                         }
                                     }
                                     Err(e) => {
-                                        println!("Error serializing message for republish: {}", e);
+                                        println!("Error serializing message for republish: {}. Queuing for retry.", e);
+                                        // On serialization error, queue for retry
+                                        failed_publish_queue_clone.lock().unwrap().push_back(entry.clone());
                                     }
                                 }
                             }
                         } else {
-                            // Handle as plain text message
                             println!(
                                 "Got plain text message: '{}' from peer: {}",
                                 String::from_utf8_lossy(&message.data),
@@ -493,20 +459,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
             _ = heartbeat_interval.tick() => {
-                // Always use the local multiaddr for heartbeats in this setup
-                let current_multiaddr = format!("/ip4/127.0.0.1/tcp/{}/p2p/{}", config.node.port, peer_id);
-
-                // Send heartbeat with current local information
+                let current_multiaddr = format!("/ip4/127.0.0.1/tcp/{}/p2p/{}", config.node.port, local_peer_id);
                 match send_heartbeat(
                     &agent,
                     &canister_id,
                     node_principal,
                     &config.node.name,
-                    &current_multiaddr, // Use current_multiaddr here
+                    &current_multiaddr,
                 ).await {
                     Ok(success) => {
                         if success {
-                            println!("Heartbeat sent successfully");
+                           // println!("Heartbeat sent successfully"); // Reduce noise
                         } else {
                             println!("Heartbeat failed, will retry in next interval");
                         }
@@ -517,21 +480,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
             _ = signing_request_interval.tick() => {
                 let mesh_peers_count = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
                 if mesh_peers_count > 0 {
-                    println!("Initiating automated signing request ({} mesh peers).", mesh_peers_count);
+                   // println!("Initiating automated signing request ({} mesh peers).", mesh_peers_count);
 
-                    // Generate timestamped message content
                     let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
                     let message_content = format!("Auto Sign Request @ {}", timestamp);
 
-                    // Create hash of the message content
                     let mut hasher = Sha256::new();
                     hasher.update(message_content.as_bytes());
                     let message_hash_bytes = hasher.finalize();
                     let message_hash_hex = hex::encode(message_hash_bytes);
 
-                    // Create the SignedMessage struct
                     let mut initial_signatures = HashSet::new();
-                    initial_signatures.insert(local_peer_id.to_string()); // Add own signature
+                    initial_signatures.insert(local_peer_id.to_string());
 
                     let signed_message = SignedMessage {
                         content: message_content.to_string(),
@@ -540,35 +500,63 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         signatures: initial_signatures,
                     };
 
-                    // Store locally
                     let mut store = message_store_clone.lock().unwrap(); 
-                    // Avoid duplicate requests for the same hash quickly
                     if !store.contains_key(&message_hash_hex) {
                         store.insert(message_hash_hex.clone(), signed_message.clone());
-                        drop(store); // Release lock before publishing
+                        drop(store);
 
-                        // Serialize and publish via Gossipsub
                         match serde_json::to_string(&signed_message) {
                             Ok(json_message) => {
                                 if let Err(e) = swarm
                                     .behaviour_mut().gossipsub
                                     .publish(topic.clone(), json_message.as_bytes())
                                 {
-                                    println!("Publish error for auto-sign request: {e:?}");
+                                    println!("Publish error for auto-sign request: {e:?}. Queuing for retry.");
+                                    // On publish error, queue for retry
+                                    failed_publish_queue_clone.lock().unwrap().push_back(signed_message);
+                                } else {
+                                    println!("Auto-sign message published: Hash {}", message_hash_hex);
                                 }
-                                println!("Auto-sign message published: Hash {}", message_hash_hex);
                             }
                             Err(e) => {
-                                println!("Error serializing auto-sign message: {}", e);
+                                println!("Error serializing auto-sign message: {}. Queuing for retry.", e);
+                                // On serialization error, queue for retry
+                                failed_publish_queue_clone.lock().unwrap().push_back(signed_message);
                             }
                         }
                     } else {
-                        // Optionally log that we skipped an existing hash
-                        // println!("Skipping publish for existing hash: {}", message_hash_hex);
                         drop(store);
                     }
                 } else {
-                    // println!("Skipping automated signing request: No mesh peers."); // Optional log
+                    // println!("Skipping automated signing request: No mesh peers.");
+                }
+            }
+            _ = retry_publish_interval.tick() => { // Added retry logic arm
+                let mut queue = failed_publish_queue_clone.lock().unwrap();
+                if !queue.is_empty() {
+                    println!("Retrying publication for {} queued messages.", queue.len());
+                    let mut still_failed = VecDeque::new(); // Collect messages that fail again
+                    while let Some(message_to_retry) = queue.pop_front() {
+                        match serde_json::to_string(&message_to_retry) {
+                            Ok(json_message) => {
+                                if let Err(e) = swarm
+                                    .behaviour_mut().gossipsub
+                                    .publish(topic.clone(), json_message.as_bytes())
+                                {
+                                    println!("Retry publish error for hash {}: {e:?}. Re-queuing.", message_to_retry.message_hash);
+                                    still_failed.push_back(message_to_retry); // Add back if publish fails
+                                } else {
+                                    println!("Retry publish successful for hash {}.", message_to_retry.message_hash);
+                                }
+                            }
+                            Err(e) => {
+                                println!("Retry serialization error for hash {}: {}. Re-queuing.", message_to_retry.message_hash, e);
+                                still_failed.push_back(message_to_retry); // Add back if serialization fails
+                            }
+                        }
+                    }
+                    // Put messages that failed again back into the main queue
+                    queue.extend(still_failed);
                 }
             }
         }
