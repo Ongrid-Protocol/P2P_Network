@@ -1,13 +1,13 @@
 # P2P Network Implementation
 
-A decentralized peer-to-peer network implementation with message verification capabilities.
+A decentralized peer-to-peer network implementation using libp2p, integrated with the Internet Computer (IC) for node registration and discovery, featuring automated message signing and verification.
 
 ## Prerequisites
 
 - [Docker](https://docs.docker.com/get-docker/) and [Docker Compose](https://docs.docker.com/compose/install/)
 - [Rust](https://www.rust-lang.org/tools/install) (latest stable version)
-- [OpenSSL](https://www.openssl.org/) (for key generation)
-- Internet Computer (IC) local replica running
+- [dfx](https://internetcomputer.org/docs/current/developer-docs/setup/install/) (IC SDK)
+- [OpenSSL](https://www.openssl.org/) (used by `generate_configs.sh` for key generation)
 
 ## Project Structure
 

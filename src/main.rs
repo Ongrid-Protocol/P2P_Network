@@ -1,4 +1,4 @@
-use std::{error::Error, hash::{Hash, Hasher},collections::hash_map::DefaultHasher, collections::{HashSet, HashMap, VecDeque}, fs::{File, OpenOptions}, path::Path, io::{Read, Write}, env, sync::{Arc, Mutex}, net::Ipv4Addr, time::{SystemTime, UNIX_EPOCH}};
+use std::{error::Error, hash::{Hash, Hasher},collections::hash_map::DefaultHasher, collections::{HashSet, HashMap, VecDeque}, fs::{File, OpenOptions}, path::Path, io::{self, BufWriter, Read, Write}, env, sync::{Arc, Mutex}, net::Ipv4Addr, time::{SystemTime, UNIX_EPOCH}};
 use serde::{Deserialize, Serialize};
 use futures::prelude::*;
 use libp2p::{identity, noise, ping, gossipsub, mdns, swarm::{SwarmEvent, NetworkBehaviour}, tcp, yamux, Multiaddr, PeerId, multiaddr::Protocol};
@@ -9,6 +9,8 @@ use tokio::time::{interval, Duration};
 use sha2::{Sha256, Digest};
 use hex;
 use serde_json;
+use chrono::Utc; // Add chrono for timestamps
+use std::time::Instant; // Import Instant for duration checking if needed later
 
 // Define the structure for signed messages
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -65,6 +67,18 @@ struct MyBehaviour {
 type MessageStore = Arc<Mutex<HashMap<String, SignedMessage>>>;
 type VerificationCounter = Arc<Mutex<u64>>;
 type FailedPublishQueue = Arc<Mutex<VecDeque<SignedMessage>>>; // Use VecDeque for FIFO retry
+
+// Log file structure
+type LogFile = Arc<Mutex<BufWriter<File>>>; // Use BufWriter for efficiency
+
+async fn write_log(log_file: &LogFile, message: String) {
+    let mut writer = log_file.lock().unwrap();
+    if let Err(e) = writeln!(writer, "[{}] {}", Utc::now().to_rfc3339(), message) {
+        eprintln!("Failed to write to verification log: {}", e); // Log errors to stderr
+    }
+    // Flush occasionally might be needed if logs are critical in case of crash
+    // writer.flush().ok();
+}
 
 async fn register_node(agent: &Agent, canister_id: &Principal, node_principal: Principal, name: &str, multiaddr: &str) -> Result<RegisterResponse, Box<dyn Error>> {
     let response = agent
@@ -168,6 +182,16 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let config = load_config()?;
     println!("Loaded configuration: {:?}", config);
 
+    // --- Log File Setup ---
+    let log_path = "verification_log.txt";
+    let file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(log_path)?;
+    let log_file: LogFile = Arc::new(Mutex::new(BufWriter::new(file)));
+    println!("Logging verification events to: {}", log_path);
+    // --- End Log File Setup ---
+
     let private_key_bytes = hex::decode(&config.node.private_key)?;
     let id_keys = identity::Keypair::ed25519_from_bytes(private_key_bytes.clone())?;
     let peer_id = PeerId::from(id_keys.public());
@@ -222,7 +246,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let fetched_nodes = fetch_peer_nodes(&agent, &config.node).await?;
-    println!("Fetched Peer Nodes from canister: {:?}", fetched_nodes);
+    // println!("Fetched Peer Nodes from canister: {:?}", fetched_nodes);
 
     let active_nodes: Vec<String> = fetched_nodes
         .into_iter()
@@ -274,13 +298,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
             };
 
             let gossipsub_config = gossipsub::ConfigBuilder::default()
-                .heartbeat_interval(Duration::from_secs(10))
-                .validation_mode(gossipsub::ValidationMode::Strict) 
-                .message_id_fn(message_id_fn) 
-                .mesh_n_low(2) // Increased mesh parameters
-                .mesh_n(4)
-                .mesh_n_high(6)
-                .mesh_outbound_min(2)
+                .heartbeat_interval(Duration::from_secs(60))
+                .validation_mode(gossipsub::ValidationMode::Strict)
+                .message_id_fn(message_id_fn)
+                .mesh_n_low(2) // Keep low threshold the same
+                .mesh_n(6)     // Increase target mesh size from 4 to 6
+                .mesh_n_high(8) // Increase high threshold from 6 to 8
+                .mesh_outbound_min(2) // Keep outbound min the same
                 .build()
                 .map_err(io::Error::other)?;
 
@@ -324,7 +348,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
     }
 
-    let mut heartbeat_interval = interval(Duration::from_secs(30));
+    let mut heartbeat_interval = interval(Duration::from_secs(60));
     let mut signing_request_interval = interval(Duration::from_secs(10)); 
     let mut retry_publish_interval = interval(Duration::from_secs(30)); // Added retry interval
 
@@ -334,7 +358,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let verification_counter_clone = verification_counter.clone();
     let failed_publish_queue_clone = failed_publish_queue.clone();
     let local_peer_id = peer_id;
-    let keypair_clone = id_keys;
+    let _keypair_clone = id_keys; // Prefix with underscore
+    let log_file_clone = log_file.clone(); // Clone Arc for the main loop
 
     loop {
         tokio::select! {
@@ -349,21 +374,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
                         println!("Connection established with peer: {}", peer_id);
                         println!("Connected via: {}", endpoint.get_remote_address());
-                        if target_peers.contains(&peer_id) {
-                            println!("Adding pre-configured peer {} to gossipsub explicit peers", peer_id);
-                            swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
-                            println!("Added peer {} to gossipsub explicit peers", peer_id);
-                        }
+                        // REMOVED: Don't explicitly add peers found via dialing/config here.
+                        // Let Gossipsub discover them through the established connection.
+                        // if target_peers.contains(&peer_id) {
+                        //     println!("Adding pre-configured peer {} to gossipsub explicit peers", peer_id);
+                        //     swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                        //     println!("Added peer {} to gossipsub explicit peers", peer_id);
+                        // }
                     }
                     SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
                         for (peer_id, _multiaddr) in list {
                             println!("mDNS discovered a new peer: {peer_id}");
-                            swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                            // REMOVED: Don't explicitly add mDNS peers here.
+                            // Gossipsub might discover them via other means or its own logic.
+                            // swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
                         }
                     },
                     SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(mdns::Event::Expired(list))) => {
                         for (peer_id, _multiaddr) in list {
                             println!("mDNS discover peer has expired: {peer_id}");
+                            // Keep remove_explicit_peer if you added them previously,
+                            // but since we removed the adding part, this might also be unnecessary
+                            // unless other parts of the code add explicit peers. Let's keep it for now.
                             swarm.behaviour_mut().gossipsub.remove_explicit_peer(&peer_id);
                         }
                     },
@@ -372,60 +404,101 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         message_id: _id,
                         message,
                     })) => {
+                        let log_file_inner_clone = log_file_clone.clone(); // Clone for this specific event
+                        let local_peer_id_str = local_peer_id.to_string(); // Get local peer id as string
+
                         if let Ok(received_message) = serde_json::from_slice::<SignedMessage>(&message.data) {
-                            println!("Received SignedMessage: Hash {} from Peer {}", received_message.message_hash, propagation_source);
+                            // println!("Received SignedMessage: Hash {} from Peer {}", received_message.message_hash, propagation_source); // Keep for debugging if needed
 
                             let mut store = message_store_clone.lock().unwrap();
                             let message_hash = received_message.message_hash.clone();
                             let initial_sig_count_before_update = store.get(&message_hash).map_or(0, |m| m.signatures.len());
-                            
+
                             let entry = store.entry(message_hash.clone()).or_insert_with(|| {
-                                println!("Adding new message entry for hash: {}", message_hash);
-                                received_message.clone() 
+                                // println!("Adding new message entry for hash: {}", message_hash); // Keep for debugging if needed
+                                received_message.clone()
                             });
 
-                            let mut needs_republish = false;
+                            let mut signatures_added_now = HashSet::new();
                             let sender_peer_id_str = propagation_source.to_string();
 
-                            for sig_peer_id in received_message.signatures {
-                                if entry.signatures.insert(sig_peer_id) {
-                                    needs_republish = true; 
+                            // Add signatures from the received message payload
+                            // Iterate over a reference (&) to avoid moving signatures
+                            for sig_peer_id in &received_message.signatures {
+                                if entry.signatures.insert(sig_peer_id.clone()) {
+                                    signatures_added_now.insert(sig_peer_id.clone()); // Clone here as we need ownership for the set
                                 }
                             }
-                            
-                            if entry.signatures.insert(sender_peer_id_str) {
-                                needs_republish = true; 
+
+                            // Add the signature of the peer who propagated the message to us
+                            let mut sender_added = false;
+                            if entry.signatures.insert(sender_peer_id_str.clone()) {
+                                signatures_added_now.insert(sender_peer_id_str.clone());
+                                sender_added = true;
                             }
 
                             let current_sig_count = entry.signatures.len();
-                            println!("Signature count for hash {}: {}", message_hash, current_sig_count);
+                            let signatures_added_str = signatures_added_now.iter().cloned().collect::<Vec<_>>().join(",");
+
+                            // Log reception and signature processing
+                            write_log(
+                                &log_file_inner_clone,
+                                format!(
+                                    "MSG_RECV Node={} From={} Hash={} PayloadSigs={} AddedNow=[{}] SenderAdded={} TotalSigs={}",
+                                    local_peer_id_str,
+                                    sender_peer_id_str,
+                                    message_hash,
+                                    received_message.signatures.len(), // Now valid to access .len()
+                                    signatures_added_str,
+                                    sender_added,
+                                    current_sig_count
+                                )
+                            ).await;
+
 
                             // Check for verification threshold
+                            let mut needs_republish = !signatures_added_now.is_empty(); // Republish if any new sig was added
+
                             if current_sig_count >= 3 && initial_sig_count_before_update < 3 {
                                 let mut counter = verification_counter_clone.lock().unwrap();
                                 *counter += 1;
                                 println!("*** MESSAGE VERIFIED ({} signatures): Hash {} (Total Verified: {}) ***", current_sig_count, message_hash, *counter);
-                                needs_republish = false; 
+                                // Log verification
+                                write_log(
+                                    &log_file_inner_clone,
+                                    format!(
+                                        "MSG_VERIFIED Node={} Hash={} SigCount={} TotalVerifiedCount={}",
+                                        local_peer_id_str,
+                                        message_hash,
+                                        current_sig_count,
+                                        *counter
+                                    )
+                                ).await;
+
+                                needs_republish = false; // Don't republish if just verified
                             } else if current_sig_count >= 3 {
                                 needs_republish = false; // Already verified, no need to republish
                             }
 
                             if needs_republish {
-                                println!("Republishing message with updated signatures: Hash {}", message_hash);
-                                match serde_json::to_string(&*entry) { 
+                               // println!("Republishing message with updated signatures: Hash {}", message_hash); // Keep for debugging
+                               write_log(
+                                   &log_file_inner_clone,
+                                   format!("MSG_REPUBLISH Node={} Hash={} NewSigCount={}", local_peer_id_str, message_hash, current_sig_count)
+                               ).await;
+
+                                match serde_json::to_string(&*entry) {
                                     Ok(json_message) => {
                                         if let Err(e) = swarm
                                             .behaviour_mut().gossipsub
                                             .publish(topic.clone(), json_message.as_bytes())
                                         {
-                                            println!("Republish error: {e:?}. Queuing for retry.");
-                                            // On publish error, queue for retry
+                                            eprintln!("Republish error: {e:?}. Queuing for retry.");
                                             failed_publish_queue_clone.lock().unwrap().push_back(entry.clone());
                                         }
                                     }
                                     Err(e) => {
-                                        println!("Error serializing message for republish: {}. Queuing for retry.", e);
-                                        // On serialization error, queue for retry
+                                        eprintln!("Error serializing message for republish: {}. Queuing for retry.", e);
                                         failed_publish_queue_clone.lock().unwrap().push_back(entry.clone());
                                     }
                                 }
@@ -438,8 +511,8 @@ async fn main() -> Result<(), Box<dyn Error>> {
                             );
                         }
                     },
-                    SwarmEvent::Behaviour(MyBehaviourEvent::Ping(event)) => {
-                        println!("Ping event: {:?}", event);
+                    SwarmEvent::Behaviour(MyBehaviourEvent::Ping(_event)) => { // Prefix with underscore
+                        // println!("Ping event: {:?}", event);
                     },
                     SwarmEvent::Dialing { peer_id, connection_id } => {
                         println!("Dialing peer: {:?} on connection: {:?}", peer_id.map(|p| p.to_string()), connection_id);
@@ -479,8 +552,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
             _ = signing_request_interval.tick() => {
                 let mesh_peers_count = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
-                if mesh_peers_count > 0 {
-                   // println!("Initiating automated signing request ({} mesh peers).", mesh_peers_count);
+                // Check if the mesh peer count meets the threshold of 3
+                if mesh_peers_count >= 3 {
+                    println!("Initiating automated signing request ({} mesh peers >= 3).", mesh_peers_count);
+                    let log_file_inner_clone = log_file_clone.clone(); // Clone only if needed
 
                     let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
                     let message_content = format!("Auto Sign Request @ {}", timestamp);
@@ -491,19 +566,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     let message_hash_hex = hex::encode(message_hash_bytes);
 
                     let mut initial_signatures = HashSet::new();
-                    initial_signatures.insert(local_peer_id.to_string());
+                    let local_peer_id_str = local_peer_id.to_string();
+                    initial_signatures.insert(local_peer_id_str.clone());
 
                     let signed_message = SignedMessage {
                         content: message_content.to_string(),
-                        originator_id: local_peer_id.to_string(),
+                        originator_id: local_peer_id_str.clone(),
                         message_hash: message_hash_hex.clone(),
                         signatures: initial_signatures,
                     };
 
-                    let mut store = message_store_clone.lock().unwrap(); 
+                    let mut store = message_store_clone.lock().unwrap();
                     if !store.contains_key(&message_hash_hex) {
                         store.insert(message_hash_hex.clone(), signed_message.clone());
-                        drop(store);
+                        drop(store); // Release lock before async operations
 
                         match serde_json::to_string(&signed_message) {
                             Ok(json_message) => {
@@ -511,24 +587,28 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     .behaviour_mut().gossipsub
                                     .publish(topic.clone(), json_message.as_bytes())
                                 {
-                                    println!("Publish error for auto-sign request: {e:?}. Queuing for retry.");
-                                    // On publish error, queue for retry
+                                    eprintln!("Publish error for auto-sign request: {e:?}. Queuing for retry.");
                                     failed_publish_queue_clone.lock().unwrap().push_back(signed_message);
                                 } else {
-                                    println!("Auto-sign message published: Hash {}", message_hash_hex);
+                                   // println!("Auto-sign message published: Hash {}", message_hash_hex);
+                                   // Log initial publication
+                                   write_log(
+                                        &log_file_inner_clone, // Use the cloned log file handle
+                                        format!("MSG_PUBLISH_INIT Node={} Hash={} Content='{}'", local_peer_id_str, message_hash_hex, signed_message.content)
+                                    ).await;
                                 }
                             }
                             Err(e) => {
-                                println!("Error serializing auto-sign message: {}. Queuing for retry.", e);
-                                // On serialization error, queue for retry
-                                failed_publish_queue_clone.lock().unwrap().push_back(signed_message);
+                                 eprintln!("Error serializing auto-sign message: {}. Queuing for retry.", e);
+                                 failed_publish_queue_clone.lock().unwrap().push_back(signed_message);
                             }
                         }
                     } else {
-                        drop(store);
+                        drop(store); // Release lock if message already exists
                     }
                 } else {
-                    // println!("Skipping automated signing request: No mesh peers.");
+                    // Log that we are skipping because the threshold isn't met
+                    println!("Skipping automated signing request: Need >= 3 mesh peers, have {}.", mesh_peers_count);
                 }
             }
             _ = retry_publish_interval.tick() => { // Added retry logic arm
