@@ -1,4 +1,4 @@
-use std::{error::Error, hash::{Hash, Hasher},collections::hash_map::DefaultHasher, collections::{HashSet, HashMap, VecDeque}, fs::{File, OpenOptions}, path::Path, io::{self, BufWriter, Read, Write}, env, sync::{Arc, Mutex}, net::Ipv4Addr, time::{SystemTime, UNIX_EPOCH}};
+use std::{error::Error, hash::{Hash, Hasher},collections::hash_map::DefaultHasher, collections::{HashSet, HashMap, VecDeque}, fs::{File, OpenOptions}, path::Path, io::{self, BufWriter, Read, Write}, env, sync::{Arc, Mutex}, time::{SystemTime, UNIX_EPOCH}, net::UdpSocket};
 use serde::{Deserialize, Serialize};
 use futures::prelude::*;
 use libp2p::{identity, noise, ping, gossipsub, mdns, swarm::{SwarmEvent, NetworkBehaviour}, tcp, yamux, Multiaddr, PeerId, multiaddr::Protocol};
@@ -11,6 +11,7 @@ use hex;
 use serde_json;
 use chrono::Utc; // Add chrono for timestamps
 use std::time::Instant; // Import Instant for duration checking if needed later
+use rand::random;
 
 // Define the structure for signed messages
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -71,6 +72,18 @@ type FailedPublishQueue = Arc<Mutex<VecDeque<SignedMessage>>>; // Use VecDeque f
 // Log file structure
 type LogFile = Arc<Mutex<BufWriter<File>>>; // Use BufWriter for efficiency
 
+// Add network metrics structure
+#[derive(Debug, Default)]
+struct NetworkMetrics {
+    connection_attempts: u64,
+    successful_connections: u64,
+    failed_connections: u64,
+    connection_durations: Vec<Duration>,
+    message_latencies: Vec<Duration>,
+    mesh_peer_counts: Vec<usize>,
+    last_heartbeat_time: Option<Instant>,
+}
+
 async fn write_log(log_file: &LogFile, message: String) {
     let mut writer = log_file.lock().unwrap();
     if let Err(e) = writeln!(writer, "[{}] {}", Utc::now().to_rfc3339(), message) {
@@ -119,7 +132,7 @@ async fn fetch_peer_nodes(agent: &Agent, config: &NodeSettings) -> Result<Vec<St
         .await?;
 
     let nodes: Vec<Node> = candid::decode_one(&response)?;
-    println!("Fetched nodes from canister: {:?}", nodes);
+    // println!("Fetched nodes from canister: {:?}", nodes);
     
     Ok(nodes.into_iter()
         .map(|node| node.multiaddress)
@@ -173,6 +186,33 @@ fn verify_signature(message: &[u8], signature: &[u8], public_key: &[u8]) -> Resu
     Ok(public_key.verify(message, signature))
 }
 
+async fn get_public_ip() -> Result<String, Box<dyn Error>> {
+    // Try to get public IP from environment first
+    if let Ok(ip) = env::var("PUBLIC_IP") {
+        return Ok(ip);
+    }
+
+    // Try to get public IP by connecting to a public service
+    let socket = UdpSocket::bind("0.0.0.0:0")?;
+    socket.connect("8.8.8.8:80")?; // Google's DNS
+    let local_addr = socket.local_addr()?;
+    let ip = local_addr.ip().to_string();
+    
+    println!("Detected public IP: {}", ip);
+    Ok(ip)
+}
+
+async fn clear_registry(agent: &Agent, canister_id: &Principal) -> Result<bool, Box<dyn Error>> {
+    let response = agent
+        .update(canister_id, "clear_registry")
+        .with_arg(candid::encode_args(())?)
+        .call_and_wait()
+        .await?;
+
+    let result: bool = candid::decode_one(&response)?;
+    Ok(result)
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let _ = tracing_subscriber::fmt()
@@ -181,6 +221,33 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let config = load_config()?;
     println!("Loaded configuration: {:?}", config);
+
+    // Check if we should clear the registry
+    if env::var("CLEAR_REGISTRY").is_ok() {
+        let ic_url = env::var("IC_URL").unwrap_or_else(|_| {
+            println!("Warning: IC_URL environment variable not set, using URL from config.yaml");
+            config.node.ic.url.clone()
+        });
+        println!("Using IC URL: {}", ic_url);
+
+        let agent = Agent::builder()
+            .with_url(&ic_url)
+            .build()?;
+
+        if config.node.ic.is_local {
+            agent.fetch_root_key().await?;
+        }
+
+        let canister_id = Principal::from_text(&config.node.ic.canister_id)?;
+        println!("Clearing registry for canister: {}", canister_id);
+
+        match clear_registry(&agent, &canister_id).await {
+            Ok(true) => println!("Registry cleared successfully"),
+            Ok(false) => println!("Failed to clear registry"),
+            Err(e) => println!("Error clearing registry: {}", e),
+        }
+        return Ok(());
+    }
 
     // --- Log File Setup ---
     let log_path = "verification_log.txt";
@@ -221,15 +288,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let canister_id = Principal::from_text(&config.node.ic.canister_id)?;
     println!("Canister ID: {}", canister_id);
 
-    let local_multiaddr = format!("/ip4/127.0.0.1/tcp/{}/p2p/{}", config.node.port, peer_id);
-    println!("Using local multiaddress for registration/heartbeat: {}", local_multiaddr);
+    // Get the public IP address
+    let public_ip = get_public_ip().await?;
+    let public_multiaddr = format!("/ip4/{}/tcp/{}/p2p/{}", public_ip, config.node.port, peer_id);
+    println!("Using public multiaddress for registration/heartbeat: {}", public_multiaddr);
 
     match register_node(
         &agent,
         &canister_id,
         node_principal,
         &config.node.name,
-        &local_multiaddr,
+        &public_multiaddr,
     ).await {
         Ok(response) => {
             if response.success {
@@ -263,20 +332,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
         })
         .collect();
 
-    println!("Filtered Peer Nodes (excluding self): {:?}", active_nodes);
+    // println!("Filtered Peer Nodes (excluding self): {:?}", active_nodes);
 
     let dialable_node_addrs: Vec<String> = active_nodes.iter().map(|addr_str| { 
         if let Ok(ma) = addr_str.parse::<Multiaddr>() {
             let components: Vec<_> = ma.iter().collect();
             if let Some(Protocol::Ip4(ip)) = components.get(0) {
                 if !ip.is_loopback() && !ip.is_private() {
-                    let mut new_ma = Multiaddr::empty();
-                    new_ma.push(Protocol::Ip4(Ipv4Addr::LOCALHOST));
-                    for component in components.iter().skip(1) {
-                        new_ma.push(component.clone());
-                    }
-                    println!("Transformed remote address {} to {}", addr_str, new_ma);
-                    return new_ma.to_string();
+                    // Keep the original address
+                    return addr_str.clone();
                 }
             }
         }
@@ -298,13 +362,19 @@ async fn main() -> Result<(), Box<dyn Error>> {
             };
 
             let gossipsub_config = gossipsub::ConfigBuilder::default()
-                .heartbeat_interval(Duration::from_secs(60))
+                .heartbeat_interval(Duration::from_secs(1))
                 .validation_mode(gossipsub::ValidationMode::Strict)
                 .message_id_fn(message_id_fn)
-                .mesh_n_low(2) // Keep low threshold the same
-                .mesh_n(6)     // Increase target mesh size from 4 to 6
-                .mesh_n_high(8) // Increase high threshold from 6 to 8
-                .mesh_outbound_min(2) // Keep outbound min the same
+                .mesh_n_low(3)
+                .mesh_n(5)
+                .mesh_n_high(8)
+                .mesh_outbound_min(2)
+                .gossip_lazy(4)
+                .do_px()
+                .flood_publish(true)
+                // Add these for better debugging:
+                .heartbeat_initial_delay(Duration::from_secs(1))
+                .heartbeat_interval(Duration::from_secs(1))
                 .build()
                 .map_err(io::Error::other)?;
 
@@ -313,8 +383,20 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 gossipsub_config,
             )?;
 
-            let mdns =
-                mdns::tokio::Behaviour::new(mdns::Config::default(), key.public().to_peer_id())?;
+            // Get mDNS port from environment variable or use default
+            let _mdns_port = env::var("MDNS_PORT")
+                .ok()
+                .and_then(|p| p.parse::<u16>().ok())
+                .unwrap_or(5353);
+
+            // Create mDNS config with custom settings
+            let mdns_config = mdns::Config {
+                ttl: std::time::Duration::from_secs(60), // 60 second TTL
+                query_interval: std::time::Duration::from_secs(10), // Query every 10 seconds
+                enable_ipv6: false, // Disable IPv6 to avoid potential issues
+            };
+
+            let mdns = mdns::tokio::Behaviour::new(mdns_config, key.public().to_peer_id())?;
 
             let ping = ping::Behaviour::new(ping::Config::new());
 
@@ -325,8 +407,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     let topic = gossipsub::IdentTopic::new("testing");
     swarm.behaviour_mut().gossipsub.subscribe(&topic)?;
+    println!("Subscribed to topic: {}", topic.hash());
 
-    let listen_addr = format!("/ip4/0.0.0.0/tcp/{}", config.node.port).parse()?;
+    // Create listen address using public IP
+    let listen_addr = format!("/ip4/{}/tcp/{}", public_ip, config.node.port).parse()?;
     swarm.listen_on(listen_addr)?;
 
     let mut target_peers = HashSet::new(); 
@@ -352,6 +436,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let mut signing_request_interval = interval(Duration::from_secs(10)); 
     let mut retry_publish_interval = interval(Duration::from_secs(30)); // Added retry interval
 
+    let network_metrics: Arc<Mutex<NetworkMetrics>> = Arc::new(Mutex::new(NetworkMetrics::default()));
+    let metrics_clone = network_metrics.clone();
+    
+    // Add metrics logging interval
+    let mut metrics_interval = interval(Duration::from_secs(60));
+
     println!("Node initialized. Waiting for peers and network events.");
 
     let message_store_clone = message_store.clone();
@@ -368,26 +458,45 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     SwarmEvent::NewListenAddr { address, .. } => {
                         println!("\nNode Information:");
                         println!("Name: {}", config.node.name);
-                        println!("PeerId: {}", local_peer_id); // Use cloned local_peer_id
-                        println!("Local Multiaddr: {}/p2p/{}", address, local_peer_id); // Use cloned local_peer_id
+                        println!("PeerId: {}", local_peer_id);
+                        println!("Listening on: {}", address);
+                        println!("Public Multiaddr: {}", public_multiaddr);
                     }
                     SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
                         println!("Connection established with peer: {}", peer_id);
                         println!("Connected via: {}", endpoint.get_remote_address());
-                        // REMOVED: Don't explicitly add peers found via dialing/config here.
-                        // Let Gossipsub discover them through the established connection.
-                        // if target_peers.contains(&peer_id) {
-                        //     println!("Adding pre-configured peer {} to gossipsub explicit peers", peer_id);
-                        //     swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
-                        //     println!("Added peer {} to gossipsub explicit peers", peer_id);
-                        // }
-                    }
+                                            
+                        // Immediately add to explicit peers
+                        swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                        
+                        // Force mesh addition if below target
+                        let mesh_peers = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
+                        if mesh_peers < 5 {
+                            println!("Mesh size low ({}), forcing peer {} into mesh", mesh_peers, peer_id);
+                            swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                            
+                            // Send a test message to trigger mesh formation
+                            let test_msg = format!("FORCE-MESH {} {}", peer_id, SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs());
+                            if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), test_msg.as_bytes()) {
+                                println!("Failed to publish force-mesh message: {}", e);
+                            }
+                        }
+                        
+                        let mut metrics = metrics_clone.lock().unwrap();
+                        metrics.successful_connections += 1;
+                        metrics.connection_attempts += 1;
+                        metrics.connection_durations.push(Duration::from_secs(0));
+                    },
                     SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
                         for (peer_id, _multiaddr) in list {
                             println!("mDNS discovered a new peer: {peer_id}");
-                            // REMOVED: Don't explicitly add mDNS peers here.
-                            // Gossipsub might discover them via other means or its own logic.
-                            // swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                            // Add mDNS discovered peers to explicit peers
+                            swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                            let mesh_peers = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
+                            if mesh_peers < 5 {
+                                println!("Mesh size below target ({} < 5), added mDNS peer {}", mesh_peers, peer_id);
+                                // The mesh will be updated in the next heartbeat
+                            }
                         }
                     },
                     SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(mdns::Event::Expired(list))) => {
@@ -503,6 +612,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                                     }
                                 }
                             }
+
+                            let mut metrics = metrics_clone.lock().unwrap();
+                            metrics.message_latencies.push(Duration::from_secs(0)); // You can measure actual latency if needed
                         } else {
                             println!(
                                 "Got plain text message: '{}' from peer: {}",
@@ -520,19 +632,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     SwarmEvent::ConnectionClosed { peer_id, cause, .. } => {
                         println!("Connection closed with peer: {}. Cause: {:?}", peer_id, cause);
                     }
-                    SwarmEvent::OutgoingConnectionError { connection_id, peer_id, error } => {
-                        println!(
-                            "Outgoing connection error to peer: {:?}, connection_id: {:?}, error: {}",
-                            peer_id,
-                            connection_id,
-                            error
-                        );
-                    }
+                    SwarmEvent::OutgoingConnectionError { connection_id: _, peer_id: _, error: _ } => {
+                        let mut metrics = metrics_clone.lock().unwrap();
+                        metrics.failed_connections += 1;
+                        metrics.connection_attempts += 1;
+                    },
                     _ => {}
                 }
             }
             _ = heartbeat_interval.tick() => {
-                let current_multiaddr = format!("/ip4/127.0.0.1/tcp/{}/p2p/{}", config.node.port, local_peer_id);
+                // Refresh public IP on each heartbeat
+                let current_ip = get_public_ip().await?;
+                let current_multiaddr = format!("/ip4/{}/tcp/{}/p2p/{}", current_ip, config.node.port, local_peer_id);
                 match send_heartbeat(
                     &agent,
                     &canister_id,
@@ -549,6 +660,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     }
                     Err(e) => println!("Error sending heartbeat: {}", e),
                 }
+
+                let mut metrics = metrics_clone.lock().unwrap();
+                metrics.last_heartbeat_time = Some(Instant::now());
+                let mesh_peers = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
+                println!("Current mesh size: {}", mesh_peers);
+                metrics.mesh_peer_counts.push(mesh_peers);
             }
             _ = signing_request_interval.tick() => {
                 let mesh_peers_count = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
@@ -637,6 +754,60 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     }
                     // Put messages that failed again back into the main queue
                     queue.extend(still_failed);
+                }
+            }
+            _ = metrics_interval.tick() => {
+                let metrics = metrics_clone.lock().unwrap();
+                let mesh_peers = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
+                
+                // Calculate average connection duration
+                let avg_connection_duration = if !metrics.connection_durations.is_empty() {
+                    metrics.connection_durations.iter().sum::<Duration>() / metrics.connection_durations.len() as u32
+                } else {
+                    Duration::from_secs(0)
+                };
+                
+                // Calculate average message latency
+                let avg_message_latency = if !metrics.message_latencies.is_empty() {
+                    metrics.message_latencies.iter().sum::<Duration>() / metrics.message_latencies.len() as u32
+                } else {
+                    Duration::from_secs(0)
+                };
+                
+                // Log network metrics
+                println!("\n=== Network Metrics ===");
+                println!("Connection Success Rate: {:.2}%", 
+                    (metrics.successful_connections as f64 / metrics.connection_attempts as f64) * 100.0);
+                println!("Average Connection Duration: {:?}", avg_connection_duration);
+                println!("Average Message Latency: {:?}", avg_message_latency);
+                println!("Current Mesh Size: {}", mesh_peers);
+                println!("Mesh Size History (last 5): {:?}", 
+                    metrics.mesh_peer_counts.iter().rev().take(5).collect::<Vec<_>>());
+                println!("Last Heartbeat: {:?}", metrics.last_heartbeat_time);
+                println!("=====================\n");
+            }
+        }
+
+        // Add mesh formation check in the main loop
+        let peer_ids: Vec<PeerId> = swarm.connected_peers().cloned().collect();
+        let mesh_peers: HashSet<PeerId> = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).cloned().collect();
+        
+        for peer_id in peer_ids {
+            if !mesh_peers.contains(&peer_id) {
+                println!("Peer {} is connected but not in mesh, attempting to force mesh addition", peer_id);
+                swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                
+                // Generate unique message with timestamp and random number
+                let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+                let random_num: u64 = random();
+                let test_message = format!("Mesh test {} {} {}", peer_id, timestamp, random_num);
+                if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), test_message.as_bytes()) {
+                    println!("Failed to publish test message: {}", e);
+                }
+                
+                if mesh_peers.len() < 5 {
+                    println!("Mesh size below target ({} < 5), attempting to force peer {} into mesh", 
+                        mesh_peers.len(), peer_id);
                 }
             }
         }

@@ -32,7 +32,7 @@ RUN mkdir -p src/bin && \
     echo 'fn main() { println!("dummy bin"); }' > src/bin/dummy.rs
 
 # First build for dependency caching
-RUN cargo build --release
+RUN cargo build --release || (echo "Initial build failed, continuing with source build..." && true)
 
 # Clean up dummy build
 RUN rm -f target/release/deps/p2p*
@@ -41,9 +41,8 @@ RUN rm -f target/release/deps/p2p*
 COPY --chown=rust:rust src ./src/
 COPY --chown=rust:rust identities ./identities/
 
-# Final build
-RUN cargo build --release && \
-    strip target/release/p2p
+# Final build with error handling
+RUN cargo build --release || (echo "Build failed, showing cargo output:" && cargo build --release --verbose && exit 1)
 
 # Stage 2: Runtime environment
 FROM rust:latest

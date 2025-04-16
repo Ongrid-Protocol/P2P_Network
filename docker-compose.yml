@@ -6,16 +6,16 @@ x-node-build: &node-build
 
 services:
   node1:
-    <<: *node-build # Use the common build definition
-    image: p2p-node-image # Standardize image name
+    <<: *node-build
+    image: p2p-node-image
     volumes:
-      - ./identities/node1_config.yaml:/app/config.yaml:ro # Mount specific config read-only
+      - ./identities/node1_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node1
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
-      # Add other necessary environment variables
-    network_mode: host # Use host network for direct connection to dfx
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+      - RUST_LOG=info
+      - MDNS_PORT=5354
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
 
   node2:
     <<: *node-build
@@ -24,9 +24,10 @@ services:
       - ./identities/node2_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node2
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5355
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node3:
     <<: *node-build
@@ -35,9 +36,10 @@ services:
       - ./identities/node3_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node3
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5356
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node4:
     <<: *node-build
@@ -46,9 +48,10 @@ services:
       - ./identities/node4_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node4
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5357
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node5:
     <<: *node-build
@@ -57,9 +60,10 @@ services:
       - ./identities/node5_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node5
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5358
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node6:
     <<: *node-build
@@ -68,9 +72,10 @@ services:
       - ./identities/node6_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node6
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5359
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node7:
     <<: *node-build
@@ -79,9 +84,10 @@ services:
       - ./identities/node7_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node7
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5360
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node8:
     <<: *node-build
@@ -90,9 +96,10 @@ services:
       - ./identities/node8_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node8
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5361
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node9:
     <<: *node-build
@@ -101,9 +108,10 @@ services:
       - ./identities/node9_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node9
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5362
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node10:
     <<: *node-build
@@ -112,9 +120,10 @@ services:
       - ./identities/node10_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node10
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5363
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node11:
     <<: *node-build
@@ -123,9 +132,10 @@ services:
       - ./identities/node11_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node11
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5364
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node12:
     <<: *node-build
@@ -134,9 +144,10 @@ services:
       - ./identities/node12_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node12
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5365
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node13:
     <<: *node-build
@@ -145,9 +156,10 @@ services:
       - ./identities/node13_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node13
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5366
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node14:
     <<: *node-build
@@ -156,9 +168,10 @@ services:
       - ./identities/node14_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node14
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5367
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node15:
     <<: *node-build
@@ -167,9 +180,10 @@ services:
       - ./identities/node15_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node15
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5368
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node16:
     <<: *node-build
@@ -178,9 +192,10 @@ services:
       - ./identities/node16_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node16
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5369
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node17:
     <<: *node-build
@@ -189,9 +204,10 @@ services:
       - ./identities/node17_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node17
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5370
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node18:
     <<: *node-build
@@ -200,9 +216,10 @@ services:
       - ./identities/node18_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node18
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5371
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node19:
     <<: *node-build
@@ -211,9 +228,10 @@ services:
       - ./identities/node19_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node19
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5372
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
   node20:
     <<: *node-build
@@ -222,9 +240,10 @@ services:
       - ./identities/node20_config.yaml:/app/config.yaml:ro
     environment:
       - NODE_NAME=node20
-      - RUST_LOG=info,libp2p_gossipsub=debug # Enable gossipsub debug logs
+      - RUST_LOG=info
+      - MDNS_PORT=5373
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p" # Add sleep before starting
+    command: sh -c "sleep 5 && /app/p2p"
 
 volumes:
   ic_state:

@@ -1,5 +1,5 @@
 use std::{error::Error};
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::fs::File;
 use std::path::Path;
 use ic_agent::Agent;
@@ -12,12 +12,15 @@ struct NodeConfig {
 
 #[derive(Debug, Deserialize)]
 struct NodeSettings {
+    name: String,
+    port: u16,
+    private_key: String,
     ic: ICSettings,
+    peer_nodes: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ICSettings {
-    network: String,
     canister_id: String,
     is_local: bool,
     url: String,

@@ -36,13 +36,13 @@ struct NodeConfig {
 struct NodeSettings {
     name: String,
     port: u16,
-    ic: ICSettings,
     private_key: String,
+    ic: ICSettings,
+    peer_nodes: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct ICSettings {
-    network: String,
     canister_id: String,
     is_local: bool,
     url: String,
