@@ -5,7 +5,7 @@ edition = "2021"
 default-run = "p2p"
 
 [dependencies]
-libp2p = { version = "0.53.2", features = ["tokio", "gossipsub", "mdns", "macros", "tcp", "yamux", "noise", "ping"] }
+libp2p = { version = "0.53.2", features = ["tokio", "gossipsub", "mdns", "macros", "tcp", "yamux", "noise", "ping", "kad", "identify"] }
 futures = "0.3"
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }

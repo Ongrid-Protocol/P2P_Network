@@ -1,0 +1,14 @@
+node_type: Regular
+name: regular2
+port: 9101
+private_key: "5555555555555555555555555555555555555555555555555555555555555555"
+bootstrap_nodes:
+  - "/ip4/127.0.0.1/tcp/9000/p2p/12D3KooWEWH3Me4d5M1FTmLc3BaCXAaFgbjV4ep7VVmzJrYpvmM8"
+  - "/ip4/127.0.0.1/tcp/9001/p2p/12D3KooWLegPnQeMGMQiMQgovJMXhCW88B9Rh7bGbQh5XsNPx2YQ"
+  - "/ip4/127.0.0.1/tcp/9002/p2p/12D3KooWLMNrqiSjjSCuGYkCDxGmk9Vr17QgW4qTFeVkVZpkUGRp"
+peer_nodes: []
+ic:
+  network: "local"
+  canister_id: "rrkah-fqaaa-aaaaa-aaaaq-cai"
+  is_local: true
+  url: "http://localhost:8000" 

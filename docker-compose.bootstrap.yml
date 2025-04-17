@@ -1,0 +1,89 @@
+version: '3'
+
+services:
+  # Mock Internet Computer canister for registry
+  ic-registry:
+    image: nginx:alpine
+    container_name: ic-registry
+    volumes:
+      - ./mock-ic:/usr/share/nginx/html
+    ports:
+      - "8000:80"
+    networks:
+      - p2p-network
+
+  bootstrap-node1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: p2p-bootstrap-node
+    container_name: bootstrap-node1
+    environment:
+      - NODE_TYPE=bootstrap
+      - NODE_NAME=bootstrap1
+      - PUBLIC_IP=${PUBLIC_IP:-127.0.0.1}
+      - RUST_LOG=info
+      - MDNS_PORT=5353
+      - IC_URL=http://ic-registry:80
+    volumes:
+      - ./config/bootstrap_node1.yaml:/app/config.yaml:ro
+      - ./logs/bootstrap1:/app/logs
+    ports:
+      - "9000:9000"
+    restart: unless-stopped
+    depends_on:
+      - ic-registry
+    networks:
+      - p2p-network
+
+  bootstrap-node2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: p2p-bootstrap-node
+    container_name: bootstrap-node2
+    environment:
+      - NODE_TYPE=bootstrap
+      - NODE_NAME=bootstrap2
+      - PUBLIC_IP=${PUBLIC_IP:-127.0.0.1}
+      - RUST_LOG=info
+      - MDNS_PORT=5354
+      - IC_URL=http://ic-registry:80
+    volumes:
+      - ./config/bootstrap_node2.yaml:/app/config.yaml:ro
+      - ./logs/bootstrap2:/app/logs
+    ports:
+      - "9001:9001"
+    restart: unless-stopped
+    depends_on:
+      - ic-registry
+    networks:
+      - p2p-network
+
+  bootstrap-node3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: p2p-bootstrap-node
+    container_name: bootstrap-node3
+    environment:
+      - NODE_TYPE=bootstrap
+      - NODE_NAME=bootstrap3
+      - PUBLIC_IP=${PUBLIC_IP:-127.0.0.1}
+      - RUST_LOG=info
+      - MDNS_PORT=5355
+      - IC_URL=http://ic-registry:80
+    volumes:
+      - ./config/bootstrap_node3.yaml:/app/config.yaml:ro
+      - ./logs/bootstrap3:/app/logs
+    ports:
+      - "9002:9002"
+    restart: unless-stopped
+    depends_on:
+      - ic-registry
+    networks:
+      - p2p-network
+
+networks:
+  p2p-network:
+    driver: bridge 

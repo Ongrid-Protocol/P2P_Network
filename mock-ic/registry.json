@@ -1,0 +1,161 @@
+{
+  "metadata": {
+    "totalNodes": 50,
+    "totalSubnets": 5,
+    "lastUpdated": "2023-11-10T15:30:00Z"
+  },
+  "nodes": [
+    {
+      "id": "node-1",
+      "ip": "192.168.1.101",
+      "status": "active",
+      "subnet": "subnet-1",
+      "nodeType": "replica",
+      "region": "us-east",
+      "uptime": 99.95,
+      "lastHeartbeat": "2023-11-10T15:29:50Z"
+    },
+    {
+      "id": "node-2",
+      "ip": "192.168.1.102",
+      "status": "active",
+      "subnet": "subnet-1",
+      "nodeType": "replica",
+      "region": "us-east",
+      "uptime": 99.87,
+      "lastHeartbeat": "2023-11-10T15:29:45Z"
+    },
+    {
+      "id": "node-3",
+      "ip": "192.168.1.103",
+      "status": "active",
+      "subnet": "subnet-2",
+      "nodeType": "replica",
+      "region": "us-west",
+      "uptime": 99.91,
+      "lastHeartbeat": "2023-11-10T15:29:52Z"
+    },
+    {
+      "id": "node-4",
+      "ip": "192.168.1.104",
+      "status": "inactive",
+      "subnet": "subnet-2",
+      "nodeType": "replica",
+      "region": "us-west",
+      "uptime": 97.25,
+      "lastHeartbeat": "2023-11-10T14:45:12Z"
+    },
+    {
+      "id": "node-5",
+      "ip": "192.168.1.105",
+      "status": "active",
+      "subnet": "subnet-3",
+      "nodeType": "boundary",
+      "region": "eu-central",
+      "uptime": 99.98,
+      "lastHeartbeat": "2023-11-10T15:29:58Z"
+    },
+    {
+      "id": "node-6",
+      "ip": "192.168.1.106",
+      "status": "maintenance",
+      "subnet": "subnet-3",
+      "nodeType": "replica",
+      "region": "eu-central",
+      "uptime": 93.75,
+      "lastHeartbeat": "2023-11-10T12:15:33Z"
+    },
+    {
+      "id": "node-7",
+      "ip": "192.168.1.107",
+      "status": "active",
+      "subnet": "subnet-4",
+      "nodeType": "replica",
+      "region": "ap-southeast",
+      "uptime": 99.89,
+      "lastHeartbeat": "2023-11-10T15:29:48Z"
+    },
+    {
+      "id": "node-8",
+      "ip": "192.168.1.108",
+      "status": "active",
+      "subnet": "subnet-4",
+      "nodeType": "boundary",
+      "region": "ap-southeast",
+      "uptime": 99.92,
+      "lastHeartbeat": "2023-11-10T15:29:53Z"
+    },
+    {
+      "id": "node-9",
+      "ip": "192.168.1.109",
+      "status": "active",
+      "subnet": "subnet-5",
+      "nodeType": "replica",
+      "region": "sa-east",
+      "uptime": 99.78,
+      "lastHeartbeat": "2023-11-10T15:29:42Z"
+    },
+    {
+      "id": "node-10",
+      "ip": "192.168.1.110",
+      "status": "warning",
+      "subnet": "subnet-5",
+      "nodeType": "replica",
+      "region": "sa-east",
+      "uptime": 98.45,
+      "lastHeartbeat": "2023-11-10T15:20:13Z"
+    }
+  ],
+  "subnets": [
+    {
+      "id": "subnet-1",
+      "name": "Application Subnet 1",
+      "nodeCount": 13,
+      "status": "healthy",
+      "type": "application",
+      "region": "us-east",
+      "chainHeight": 984532,
+      "consensusHealth": 99.95
+    },
+    {
+      "id": "subnet-2",
+      "name": "Application Subnet 2",
+      "nodeCount": 11,
+      "status": "healthy",
+      "type": "application",
+      "region": "us-west",
+      "chainHeight": 974231,
+      "consensusHealth": 99.87
+    },
+    {
+      "id": "subnet-3",
+      "name": "System Subnet",
+      "nodeCount": 7,
+      "status": "degraded",
+      "type": "system",
+      "region": "eu-central",
+      "chainHeight": 1252614,
+      "consensusHealth": 97.32
+    },
+    {
+      "id": "subnet-4",
+      "name": "NNS Subnet",
+      "nodeCount": 9,
+      "status": "healthy",
+      "type": "nns",
+      "region": "ap-southeast",
+      "chainHeight": 1435692,
+      "consensusHealth": 99.98
+    },
+    {
+      "id": "subnet-5",
+      "name": "Fiduciary Subnet",
+      "nodeCount": 10,
+      "status": "warning",
+      "type": "fiduciary",
+      "region": "sa-east",
+      "chainHeight": 752413,
+      "consensusHealth": 98.45
+    }
+  ]
+} 

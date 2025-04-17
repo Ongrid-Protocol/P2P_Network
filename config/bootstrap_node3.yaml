@@ -1,0 +1,11 @@
+node_type: Bootstrap
+name: bootstrap3
+port: 9002
+private_key: "3333333333333333333333333333333333333333333333333333333333333333"
+bootstrap_nodes: []
+peer_nodes: []
+ic:
+  network: "local"
+  canister_id: "rrkah-fqaaa-aaaaa-aaaaq-cai"
+  is_local: true
+  url: "http://localhost:8000" 

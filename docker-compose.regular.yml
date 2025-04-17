@@ -1,0 +1,94 @@
+version: '3'
+
+services:
+  regular-node1:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: p2p-regular-node
+    container_name: regular-node1
+    environment:
+      - NODE_TYPE=regular
+      - NODE_NAME=regular1
+      - PUBLIC_IP=${PUBLIC_IP:-127.0.0.1}
+      - RUST_LOG=info
+      - MDNS_PORT=5360
+      - IC_URL=http://ic-registry:80
+    volumes:
+      - ./config/regular_node1.yaml:/app/config.yaml:ro
+      - ./logs/regular1:/app/logs
+    ports:
+      - "9100:9100"
+    restart: unless-stopped
+    networks:
+      - p2p-network
+
+  regular-node2:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: p2p-regular-node
+    container_name: regular-node2
+    environment:
+      - NODE_TYPE=regular
+      - NODE_NAME=regular2
+      - PUBLIC_IP=${PUBLIC_IP:-127.0.0.1}
+      - RUST_LOG=info
+      - MDNS_PORT=5361
+      - IC_URL=http://ic-registry:80
+    volumes:
+      - ./config/regular_node2.yaml:/app/config.yaml:ro
+      - ./logs/regular2:/app/logs
+    ports:
+      - "9101:9101"
+    restart: unless-stopped
+    networks:
+      - p2p-network
+
+  regular-node3:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: p2p-regular-node
+    container_name: regular-node3
+    environment:
+      - NODE_TYPE=regular
+      - NODE_NAME=regular3
+      - PUBLIC_IP=${PUBLIC_IP:-127.0.0.1}
+      - RUST_LOG=info
+      - MDNS_PORT=5362
+      - IC_URL=http://ic-registry:80
+    volumes:
+      - ./config/regular_node3.yaml:/app/config.yaml:ro
+      - ./logs/regular3:/app/logs
+    ports:
+      - "9102:9102"
+    restart: unless-stopped
+    networks:
+      - p2p-network
+
+  regular-node4:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: p2p-regular-node
+    container_name: regular-node4
+    environment:
+      - NODE_TYPE=regular
+      - NODE_NAME=regular4
+      - PUBLIC_IP=${PUBLIC_IP:-127.0.0.1}
+      - RUST_LOG=info
+      - MDNS_PORT=5363
+      - IC_URL=http://ic-registry:80
+    volumes:
+      - ./config/regular_node4.yaml:/app/config.yaml:ro
+      - ./logs/regular4:/app/logs
+    ports:
+      - "9103:9103"
+    restart: unless-stopped
+    networks:
+      - p2p-network
+
+networks:
+  p2p-network:
+    external: true 
