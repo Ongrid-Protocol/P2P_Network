@@ -18,6 +18,8 @@ services:
     command: sh -c "sleep 5 && /app/p2p"
 
   node2:
+    depends_on:
+      - node1
     <<: *node-build
     image: p2p-node-image
     volumes:
@@ -29,221 +31,221 @@ services:
     network_mode: host
     command: sh -c "sleep 5 && /app/p2p"
 
-  node3:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node3_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node3
-      - RUST_LOG=info
-      - MDNS_PORT=5356
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node3:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node3_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node3
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5356
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node4:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node4_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node4
-      - RUST_LOG=info
-      - MDNS_PORT=5357
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node4:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node4_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node4
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5357
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node5:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node5_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node5
-      - RUST_LOG=info
-      - MDNS_PORT=5358
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node5:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node5_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node5
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5358
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node6:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node6_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node6
-      - RUST_LOG=info
-      - MDNS_PORT=5359
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node6:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node6_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node6
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5359
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node7:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node7_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node7
-      - RUST_LOG=info
-      - MDNS_PORT=5360
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node7:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node7_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node7
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5360
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node8:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node8_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node8
-      - RUST_LOG=info
-      - MDNS_PORT=5361
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node8:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node8_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node8
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5361
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node9:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node9_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node9
-      - RUST_LOG=info
-      - MDNS_PORT=5362
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node9:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node9_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node9
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5362
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node10:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node10_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node10
-      - RUST_LOG=info
-      - MDNS_PORT=5363
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node10:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node10_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node10
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5363
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node11:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node11_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node11
-      - RUST_LOG=info
-      - MDNS_PORT=5364
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node11:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node11_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node11
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5364
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node12:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node12_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node12
-      - RUST_LOG=info
-      - MDNS_PORT=5365
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node12:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node12_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node12
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5365
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node13:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node13_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node13
-      - RUST_LOG=info
-      - MDNS_PORT=5366
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node13:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node13_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node13
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5366
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node14:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node14_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node14
-      - RUST_LOG=info
-      - MDNS_PORT=5367
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node14:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node14_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node14
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5367
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node15:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node15_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node15
-      - RUST_LOG=info
-      - MDNS_PORT=5368
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node15:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node15_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node15
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5368
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node16:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node16_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node16
-      - RUST_LOG=info
-      - MDNS_PORT=5369
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node16:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node16_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node16
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5369
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node17:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node17_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node17
-      - RUST_LOG=info
-      - MDNS_PORT=5370
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node17:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node17_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node17
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5370
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node18:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node18_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node18
-      - RUST_LOG=info
-      - MDNS_PORT=5371
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node18:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node18_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node18
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5371
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node19:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node19_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node19
-      - RUST_LOG=info
-      - MDNS_PORT=5372
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node19:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node19_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node19
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5372
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
-  node20:
-    <<: *node-build
-    image: p2p-node-image
-    volumes:
-      - ./identities/node20_config.yaml:/app/config.yaml:ro
-    environment:
-      - NODE_NAME=node20
-      - RUST_LOG=info
-      - MDNS_PORT=5373
-    network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+  # node20:
+  #   <<: *node-build
+  #   image: p2p-node-image
+  #   volumes:
+  #     - ./identities/node20_config.yaml:/app/config.yaml:ro
+  #   environment:
+  #     - NODE_NAME=node20
+  #     - RUST_LOG=info
+  #     - MDNS_PORT=5373
+  #   network_mode: host
+  #   command: sh -c "sleep 5 && /app/p2p"
 
 volumes:
   ic_state:

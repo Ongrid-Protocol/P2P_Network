@@ -140,7 +140,7 @@ async fn fetch_peer_nodes(agent: &Agent, config: &NodeSettings) -> Result<Vec<St
 }
 
 fn load_config() -> Result<NodeConfig, Box<dyn Error>> {
-    let config_path = Path::new("config.yaml");
+    let config_path = Path::new("./identities/config.yaml");
     let file = File::open(config_path)?;
     let config: NodeConfig = serde_yaml::from_reader(file)?;
     Ok(config)
@@ -413,7 +413,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let listen_addr = format!("/ip4/{}/tcp/{}", public_ip, config.node.port).parse()?;
     swarm.listen_on(listen_addr)?;
 
-    let mut target_peers = HashSet::new(); 
+    let mut target_peers: HashSet<PeerId> = HashSet::new(); 
     for addr in &dialable_node_addrs { 
         if let Ok(remote_addr) = addr.parse::<Multiaddr>() {
             if let Some(libp2p::multiaddr::Protocol::P2p(peer_id)) = remote_addr.iter().last() {
@@ -488,10 +488,15 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         metrics.connection_durations.push(Duration::from_secs(0));
                     },
                     SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
+
                         for (peer_id, _multiaddr) in list {
+                            let peers = swarm.behaviour().gossipsub.all_peers();
+                            println!("Current peers {}", peers.count());
+
                             println!("mDNS discovered a new peer: {peer_id}");
                             // Add mDNS discovered peers to explicit peers
                             swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+                            let a = swarm.behaviour();
                             let mesh_peers = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
                             if mesh_peers < 5 {
                                 println!("Mesh size below target ({} < 5), added mDNS peer {}", mesh_peers, peer_id);
@@ -626,9 +631,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     SwarmEvent::Behaviour(MyBehaviourEvent::Ping(_event)) => { // Prefix with underscore
                         // println!("Ping event: {:?}", event);
                     },
-                    SwarmEvent::Dialing { peer_id, connection_id } => {
-                        println!("Dialing peer: {:?} on connection: {:?}", peer_id.map(|p| p.to_string()), connection_id);
-                    },
+                    // SwarmEvent::Dialing { peer_id, connection_id } => {
+                    //     println!("Dialing peer: {:?} on connection: {:?}", peer_id.map(|p| p.to_string()), connection_id);
+                    // },
                     SwarmEvent::ConnectionClosed { peer_id, cause, .. } => {
                         println!("Connection closed with peer: {}. Cause: {:?}", peer_id, cause);
                     }
@@ -636,6 +641,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         let mut metrics = metrics_clone.lock().unwrap();
                         metrics.failed_connections += 1;
                         metrics.connection_attempts += 1;
+                        println!("Unable to connect to peer")
                     },
                     _ => {}
                 }
@@ -789,27 +795,30 @@ async fn main() -> Result<(), Box<dyn Error>> {
         }
 
         // Add mesh formation check in the main loop
-        let peer_ids: Vec<PeerId> = swarm.connected_peers().cloned().collect();
-        let mesh_peers: HashSet<PeerId> = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).cloned().collect();
-        
-        for peer_id in peer_ids {
-            if !mesh_peers.contains(&peer_id) {
-                println!("Peer {} is connected but not in mesh, attempting to force mesh addition", peer_id);
-                swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
+        // let peer_ids: Vec<PeerId> = swarm.connected_peers().cloned().collect();
+        // let all_mesh_peers = swarm.behaviour().gossipsub.all_mesh_peers();
+        // println!("All Mesh peers {}", all_mesh_peers.count());
+        // let mesh_peers: HashSet<PeerId> = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).cloned().collect();
+        // println!("Mesh Peers {}", mesh_peers.iter().count());
+        // println!("Connected peers {}", peer_ids.iter().count());
+        // for peer_id in peer_ids {
+        //     if !mesh_peers.contains(&peer_id) {
+        //         println!("Peer {} is connected but not in mesh, attempting to force mesh addition", peer_id);
+        //         swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
                 
-                // Generate unique message with timestamp and random number
-                let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-                let random_num: u64 = random();
-                let test_message = format!("Mesh test {} {} {}", peer_id, timestamp, random_num);
-                if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), test_message.as_bytes()) {
-                    println!("Failed to publish test message: {}", e);
-                }
+        //         // Generate unique message with timestamp and random number
+        //         let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
+        //         let random_num: u64 = random();
+        //         let test_message = format!("Mesh test {} {} {}", peer_id, timestamp, random_num);
+        //         if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), test_message.as_bytes()) {
+        //             println!("Failed to publish test message: {}", e);
+        //         }
                 
-                if mesh_peers.len() < 5 {
-                    println!("Mesh size below target ({} < 5), attempting to force peer {} into mesh", 
-                        mesh_peers.len(), peer_id);
-                }
-            }
-        }
+        //         if mesh_peers.len() < 5 {
+        //             println!("Mesh size below target ({} < 5), attempting to force peer {} into mesh", 
+        //                 mesh_peers.len(), peer_id);
+        //         }
+        //     }
+        // }
     }
 }
