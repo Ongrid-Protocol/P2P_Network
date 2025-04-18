@@ -11,7 +11,6 @@ use hex;
 use serde_json;
 use chrono::Utc; // Add chrono for timestamps
 use std::time::Instant; // Import Instant for duration checking if needed later
-use rand::random;
 
 // Define the structure for signed messages
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -140,7 +139,7 @@ async fn fetch_peer_nodes(agent: &Agent, config: &NodeSettings) -> Result<Vec<St
 }
 
 fn load_config() -> Result<NodeConfig, Box<dyn Error>> {
-    let config_path = Path::new("./identities/config.yaml");
+    let config_path = Path::new("./identities/node1_config.yaml");
     let file = File::open(config_path)?;
     let config: NodeConfig = serde_yaml::from_reader(file)?;
     Ok(config)
@@ -157,34 +156,34 @@ fn save_principal_id(principal: &Principal) -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
-fn load_principal_id() -> Result<Option<Principal>, Box<dyn Error>> {
-    let path = Path::new("node_principal.txt");
-    if !path.exists() {
-        return Ok(None);
-    }
+// fn load_principal_id() -> Result<Option<Principal>, Box<dyn Error>> {
+//     let path = Path::new("node_principal.txt");
+//     if !path.exists() {
+//         return Ok(None);
+//     }
 
-    let mut file = File::open(path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
+//     let mut file = File::open(path)?;
+//     let mut contents = String::new();
+//     file.read_to_string(&mut contents)?;
     
-    if contents.is_empty() {
-        return Ok(None);
-    }
+//     if contents.is_empty() {
+//         return Ok(None);
+//     }
 
-    let principal = Principal::from_text(contents.trim())?;
-    Ok(Some(principal))
-}
+//     let principal = Principal::from_text(contents.trim())?;
+//     Ok(Some(principal))
+// }
 
-fn sign_message(message: &[u8], keypair: &identity::Keypair) -> Vec<u8> {
-    keypair.sign(message).expect("Failed to sign message")
-}
+// fn sign_message(message: &[u8], keypair: &identity::Keypair) -> Vec<u8> {
+//     keypair.sign(message).expect("Failed to sign message")
+// }
 
-fn verify_signature(message: &[u8], signature: &[u8], public_key: &[u8]) -> Result<bool, Box<dyn Error>> {
-    let mut key_bytes = public_key.to_vec();
-    let keypair = identity::Keypair::ed25519_from_bytes(&mut key_bytes)?;
-    let public_key = keypair.public();
-    Ok(public_key.verify(message, signature))
-}
+// fn verify_signature(message: &[u8], signature: &[u8], public_key: &[u8]) -> Result<bool, Box<dyn Error>> {
+//     let mut key_bytes = public_key.to_vec();
+//     let keypair = identity::Keypair::ed25519_from_bytes(&mut key_bytes)?;
+//     let public_key = keypair.public();
+//     Ok(public_key.verify(message, signature))
+// }
 
 async fn get_public_ip() -> Result<String, Box<dyn Error>> {
     // Try to get public IP from environment first
@@ -218,7 +217,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let _ = tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
         .try_init();
-
+    println!("Before load config");
     let config = load_config()?;
     println!("Loaded configuration: {:?}", config);
 
@@ -347,7 +346,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         addr_str.clone()
     }).collect();
 
-    let mut swarm = libp2p::SwarmBuilder::with_new_identity()
+    let mut swarm = libp2p::SwarmBuilder::with_existing_identity(id_keys.clone())
         .with_tokio()
         .with_tcp(
             tcp::Config::default(),
@@ -383,24 +382,29 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 gossipsub_config,
             )?;
 
-            // Get mDNS port from environment variable or use default
-            let _mdns_port = env::var("MDNS_PORT")
-                .ok()
-                .and_then(|p| p.parse::<u16>().ok())
-                .unwrap_or(5353);
+            // // Get mDNS port from environment variable or use default
+            // let _mdns_port = env::var("MDNS_PORT")
+            //     .ok()
+            //     .and_then(|p| p.parse::<u16>().ok())
+            //     .unwrap_or(5353);
 
-            // Create mDNS config with custom settings
-            let mdns_config = mdns::Config {
-                ttl: std::time::Duration::from_secs(60), // 60 second TTL
-                query_interval: std::time::Duration::from_secs(10), // Query every 10 seconds
-                enable_ipv6: false, // Disable IPv6 to avoid potential issues
-            };
+            // // Create mDNS config with custom settings
+            // let mdns_config = mdns::Config {
+            //     ttl: std::time::Duration::from_secs(60), // 60 second TTL
+            //     query_interval: std::time::Duration::from_secs(10), // Query every 10 seconds
+            //     enable_ipv6: false, // Disable IPv6 to avoid potential issues
+            // };
 
-            let mdns = mdns::tokio::Behaviour::new(mdns_config, key.public().to_peer_id())?;
+            // let mdns = mdns::tokio::Behaviour::new(mdns_config, key.public().to_peer_id())?;
+            // let mdns = mdns::tokio::Behaviour::new(mdns_config, key.public().to_peer_id())?;
+            let mdns =
+                mdns::tokio::Behaviour::new(mdns::Config::default(), key.public().to_peer_id())?;
+            // Ok(MyBehaviour { gossipsub, mdns });
 
             let ping = ping::Behaviour::new(ping::Config::new());
 
             Ok(MyBehaviour { gossipsub, mdns, ping })
+
         })?
         .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(u64::MAX)))
         .build();
