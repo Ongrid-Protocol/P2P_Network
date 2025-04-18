@@ -1,7 +1,7 @@
 use std::{error::Error, hash::{Hash, Hasher},collections::hash_map::DefaultHasher, collections::{HashSet, HashMap, VecDeque}, fs::{File, OpenOptions}, path::Path, io::{self, BufWriter, Read, Write}, env, sync::{Arc, Mutex}, time::{SystemTime, UNIX_EPOCH}, net::UdpSocket};
 use serde::{Deserialize, Serialize};
 use futures::prelude::*;
-use libp2p::{identity, noise, ping, gossipsub, mdns, swarm::{SwarmEvent, NetworkBehaviour}, tcp, yamux, Multiaddr, PeerId, multiaddr::Protocol};
+use libp2p::{identity, identify, noise, ping, gossipsub, mdns, swarm::{SwarmEvent, NetworkBehaviour}, tcp, yamux, Multiaddr, PeerId, multiaddr::Protocol};
 use tracing_subscriber::EnvFilter;
 use ic_agent::{Agent};
 use candid::{CandidType, Principal, Deserialize as CandidDeserialize};
@@ -62,6 +62,8 @@ struct MyBehaviour {
     gossipsub: gossipsub::Behaviour,
     mdns: mdns::tokio::Behaviour,
     ping: ping::Behaviour,
+    identify: identify::Behaviour,
+
 }
 
 type MessageStore = Arc<Mutex<HashMap<String, SignedMessage>>>;
@@ -403,8 +405,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
             let ping = ping::Behaviour::new(ping::Config::new());
 
-            Ok(MyBehaviour { gossipsub, mdns, ping })
-
+            let identify_cfg = identify::Config::new("/mesh-demo/1.0.0".into(), key.public());
+            let identify = identify::Behaviour::new(identify_cfg);
+            Ok(MyBehaviour { gossipsub, mdns, ping, identify })
         })?
         .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(u64::MAX)))
         .build();
