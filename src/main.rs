@@ -1,4 +1,4 @@
-use std::{error::Error, hash::{Hash, Hasher},collections::hash_map::DefaultHasher, collections::{HashSet, HashMap, VecDeque}, fs::{File, OpenOptions}, path::Path, io::{self, BufWriter, Read, Write}, env, sync::{Arc, Mutex}, time::{SystemTime, UNIX_EPOCH}, net::UdpSocket};
+use std::{error::Error, hash::{Hash, Hasher},collections::hash_map::DefaultHasher, collections::{HashSet, HashMap, VecDeque}, fs::{File, OpenOptions}, path::Path, io::{self, BufWriter, Read, Write}, env, sync::{Arc, Mutex}, time::{SystemTime, UNIX_EPOCH}, net::UdpSocket, process::Command};
 use serde::{Deserialize, Serialize};
 use futures::prelude::*;
 use libp2p::{identity, noise, ping, gossipsub, mdns, swarm::{SwarmEvent, NetworkBehaviour}, tcp, yamux, Multiaddr, PeerId, multiaddr::Protocol};
@@ -83,6 +83,17 @@ struct NetworkMetrics {
     mesh_peer_counts: Vec<usize>,
     last_heartbeat_time: Option<Instant>,
 }
+
+// Add RetryPeer structure to store information about peers to retry
+#[derive(Debug, Clone)]
+struct RetryPeer {
+    peer_id: PeerId,
+    multiaddr: Multiaddr,
+    retry_count: usize,
+    last_attempt: SystemTime,
+}
+
+type RetryList = Arc<Mutex<Vec<RetryPeer>>>;
 
 async fn write_log(log_file: &LogFile, message: String) {
     let mut writer = log_file.lock().unwrap();
@@ -213,6 +224,31 @@ async fn clear_registry(agent: &Agent, canister_id: &Principal) -> Result<bool, 
     Ok(result)
 }
 
+// Function to test network connectivity to a given host
+fn test_connectivity(target_ip: &str) -> bool {
+    #[cfg(target_os = "windows")]
+    let output = Command::new("ping")
+        .args(&["-n", "1", "-w", "1000", target_ip])
+        .output();
+
+    #[cfg(not(target_os = "windows"))]
+    let output = Command::new("ping")
+        .args(&["-c", "1", "-W", "1", target_ip])
+        .output();
+
+    match output {
+        Ok(output) => {
+            let success = output.status.success();
+            println!("Ping test to {}: {}", target_ip, if success { "SUCCESS" } else { "FAILED" });
+            success
+        }
+        Err(e) => {
+            println!("Failed to execute ping command: {}", e);
+            false
+        }
+    }
+}
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     let _ = tracing_subscriber::fmt()
@@ -270,6 +306,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let message_store: MessageStore = Arc::new(Mutex::new(HashMap::new()));
     let verification_counter: VerificationCounter = Arc::new(Mutex::new(0));
     let failed_publish_queue: FailedPublishQueue = Arc::new(Mutex::new(VecDeque::new()));
+    let retry_list: RetryList = Arc::new(Mutex::new(Vec::new()));
 
     let ic_url = env::var("IC_URL").unwrap_or_else(|_| {
         println!("Warning: IC_URL environment variable not set, using URL from config.yaml");
@@ -332,7 +369,25 @@ async fn main() -> Result<(), Box<dyn Error>> {
         })
         .collect();
 
-    // println!("Filtered Peer Nodes (excluding self): {:?}", active_nodes);
+    println!("Filtered Peer Nodes (excluding self): {:?}", active_nodes);
+
+    // Test connectivity to each unique IP in the active_nodes list
+    println!("\n--- Testing network connectivity to peer IPs ---");
+    let mut tested_ips = HashSet::new();
+    for addr in &active_nodes {
+        if let Ok(ma) = addr.parse::<Multiaddr>() {
+            for protocol in ma.iter() {
+                if let libp2p::multiaddr::Protocol::Ip4(ip) = protocol {
+                    let ip_str = ip.to_string();
+                    if !tested_ips.contains(&ip_str) {
+                        tested_ips.insert(ip_str.clone());
+                        test_connectivity(&ip_str);
+                    }
+                }
+            }
+        }
+    }
+    println!("--- End of network connectivity tests ---\n");
 
     let dialable_node_addrs: Vec<String> = active_nodes.iter().map(|addr_str| { 
         if let Ok(ma) = addr_str.parse::<Multiaddr>() {
@@ -355,52 +410,35 @@ async fn main() -> Result<(), Box<dyn Error>> {
             yamux::Config::default,
         )?
         .with_behaviour(|key| {
+            // To content-address message, we can take the hash of message and use it as an ID.
             let message_id_fn = |message: &gossipsub::Message| {
                 let mut s = DefaultHasher::new();
                 message.data.hash(&mut s);
                 gossipsub::MessageId::from(s.finish().to_string())
             };
 
+            // Set a custom gossipsub configuration
             let gossipsub_config = gossipsub::ConfigBuilder::default()
-                .heartbeat_interval(Duration::from_secs(1))
-                .validation_mode(gossipsub::ValidationMode::Strict)
-                .message_id_fn(message_id_fn)
-                .mesh_n_low(3)
-                .mesh_n(5)
-                .mesh_n_high(8)
-                .mesh_outbound_min(2)
-                .gossip_lazy(4)
-                .do_px()
-                .flood_publish(true)
-                // Add these for better debugging:
-                .heartbeat_initial_delay(Duration::from_secs(1))
-                .heartbeat_interval(Duration::from_secs(1))
+                .heartbeat_interval(Duration::from_secs(10)) // This is set to aid debugging by not cluttering the log space
+                .validation_mode(gossipsub::ValidationMode::Strict) // This sets the kind of message validation. The default is Strict (enforce message
+                // signing)
+                .message_id_fn(message_id_fn) // content-address messages. No two messages of the same content will be propagated.
                 .build()
-                .map_err(io::Error::other)?;
+                .map_err(|msg| io::Error::new(io::ErrorKind::Other, msg))?; // Temporary hack because `build` does not return a proper `std::error::Error`.
 
+            // build a gossipsub network behaviour
             let gossipsub = gossipsub::Behaviour::new(
                 gossipsub::MessageAuthenticity::Signed(key.clone()),
                 gossipsub_config,
             )?;
-
-            // Get mDNS port from environment variable or use default
-            let _mdns_port = env::var("MDNS_PORT")
-                .ok()
-                .and_then(|p| p.parse::<u16>().ok())
-                .unwrap_or(5353);
-
-            // Create mDNS config with custom settings
-            let mdns_config = mdns::Config {
-                ttl: std::time::Duration::from_secs(60), // 60 second TTL
-                query_interval: std::time::Duration::from_secs(10), // Query every 10 seconds
-                enable_ipv6: false, // Disable IPv6 to avoid potential issues
-            };
-
-            let mdns = mdns::tokio::Behaviour::new(mdns_config, key.public().to_peer_id())?;
-
             let ping = ping::Behaviour::new(ping::Config::new());
 
-            Ok(MyBehaviour { gossipsub, mdns, ping })
+
+            let mdns =
+                mdns::tokio::Behaviour::new(mdns::Config::default(), key.public().to_peer_id())?;
+            Ok(MyBehaviour { gossipsub, mdns ,ping})
+
+
         })?
         .with_swarm_config(|cfg| cfg.with_idle_connection_timeout(Duration::from_secs(u64::MAX)))
         .build();
@@ -411,18 +449,35 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Create listen address using public IP
     let listen_addr = format!("/ip4/{}/tcp/{}", public_ip, config.node.port).parse()?;
+    // let listen_addr_udp = format!("/ip4/{}/udp/{}/quic-v1", public_ip, config.node.port).parse()?;
     swarm.listen_on(listen_addr)?;
+    // swarm.listen_on(listen_addr_udp)?;
 
     let mut target_peers = HashSet::new(); 
     for addr in &dialable_node_addrs { 
         if let Ok(remote_addr) = addr.parse::<Multiaddr>() {
             if let Some(libp2p::multiaddr::Protocol::P2p(peer_id)) = remote_addr.iter().last() {
                 target_peers.insert(peer_id);
+                println!("Attempting to dial: {} at {}", peer_id, remote_addr);
                 match swarm.dial(remote_addr.clone()) {
                     Ok(_) => {
-                        println!("Dialing active node: {}", addr);
+                        println!("Dial initiated to node: {}", addr);
                     }
-                    Err(e) => println!("Failed to dial {}: {}", addr, e),
+                    Err(e) => {
+                        println!("Failed to dial {}: {} - Error type: {:?}", addr, e, e);
+                        
+                        // Add to retry list
+                        let retry_peer = RetryPeer {
+                            peer_id,
+                            multiaddr: remote_addr,
+                            retry_count: 0,
+                            last_attempt: SystemTime::now(),
+                        };
+                        
+                        let mut retry_list = retry_list.lock().unwrap();
+                        retry_list.push(retry_peer);
+                        println!("Added peer {} to retry list for later attempts", peer_id);
+                    }
                 }
             } else {
                 println!("Could not extract PeerId from Multiaddr: {}", addr);
@@ -450,9 +505,13 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let local_peer_id = peer_id;
     let _keypair_clone = id_keys; // Prefix with underscore
     let log_file_clone = log_file.clone(); // Clone Arc for the main loop
+    let mut network_check = interval(Duration::from_secs(10));
+    let retry_list_clone = retry_list.clone(); // Clone the retry list
+    let mut connection_retry_interval = interval(Duration::from_secs(15)); // Add retry interval
 
     loop {
         tokio::select! {
+
             event = swarm.select_next_some() => {
                 match event {
                     SwarmEvent::NewListenAddr { address, .. } => {
@@ -461,41 +520,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
                         println!("PeerId: {}", local_peer_id);
                         println!("Listening on: {}", address);
                         println!("Public Multiaddr: {}", public_multiaddr);
-                    }
+                    },
                     SwarmEvent::ConnectionEstablished { peer_id, endpoint, .. } => {
                         println!("Connection established with peer: {}", peer_id);
                         println!("Connected via: {}", endpoint.get_remote_address());
-                                            
-                        // Immediately add to explicit peers
                         swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
-                        
-                        // Force mesh addition if below target
-                        let mesh_peers = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
-                        if mesh_peers < 5 {
-                            println!("Mesh size low ({}), forcing peer {} into mesh", mesh_peers, peer_id);
-                            swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
-                            
-                            // Send a test message to trigger mesh formation
-                            let test_msg = format!("FORCE-MESH {} {}", peer_id, SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs());
-                            if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), test_msg.as_bytes()) {
-                                println!("Failed to publish force-mesh message: {}", e);
-                            }
-                        }
-                        
+
                         let mut metrics = metrics_clone.lock().unwrap();
                         metrics.successful_connections += 1;
                         metrics.connection_attempts += 1;
                         metrics.connection_durations.push(Duration::from_secs(0));
                     },
                     SwarmEvent::Behaviour(MyBehaviourEvent::Mdns(mdns::Event::Discovered(list))) => {
-                        for (peer_id, _multiaddr) in list {
-                            println!("mDNS discovered a new peer: {peer_id}");
-                            // Add mDNS discovered peers to explicit peers
-                            swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
-                            let mesh_peers = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
-                            if mesh_peers < 5 {
-                                println!("Mesh size below target ({} < 5), added mDNS peer {}", mesh_peers, peer_id);
-                                // The mesh will be updated in the next heartbeat
+                        println!("mDNS discovered peers - Full details: {:?}", list);
+                        for (peer_id, multiaddr) in list {
+                            println!("Discovered peer {} at {}", peer_id, multiaddr);
+                            // Verify the multiaddr is reachable
+                            if !multiaddr.to_string().contains("127.0.0.1") { // Filter out loopback
+                                println!("Attempting to dial {}", peer_id);
+                                if let Err(e) = swarm.dial(multiaddr.clone()) {
+                                    println!("Failed to dial peer {}: {}", peer_id, e);
+                                }
                             }
                         }
                     },
@@ -631,15 +676,58 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     },
                     SwarmEvent::ConnectionClosed { peer_id, cause, .. } => {
                         println!("Connection closed with peer: {}. Cause: {:?}", peer_id, cause);
-                    }
-                    SwarmEvent::OutgoingConnectionError { connection_id: _, peer_id: _, error: _ } => {
+                    },
+                    SwarmEvent::OutgoingConnectionError { peer_id, error, .. } => {
+                        println!("Failed to connect to peer: {:?} - Error: {}", peer_id, error);
+                        
+                        // Add to failed connections metrics
                         let mut metrics = metrics_clone.lock().unwrap();
                         metrics.failed_connections += 1;
                         metrics.connection_attempts += 1;
+                        
+                        // If we have a peer_id, add to the retry list
+                        if let Some(peer_id) = peer_id {
+                            println!("Will attempt to redial peer {} during the next retry cycle", peer_id);
+                            
+                            // Add to retry list if we have the multiaddr
+                            for addr in &dialable_node_addrs {
+                                if addr.contains(&peer_id.to_string()) {
+                                    if let Ok(multiaddr) = addr.parse::<Multiaddr>() {
+                                        let retry_peer = RetryPeer {
+                                            peer_id,
+                                            multiaddr,
+                                            retry_count: 0,
+                                            last_attempt: SystemTime::now(),
+                                        };
+                                        
+                                        let mut retry_list = retry_list_clone.lock().unwrap();
+                                        // Check if already in list
+                                        if !retry_list.iter().any(|p| p.peer_id == peer_id) {
+                                            println!("Added peer {} to retry list", peer_id);
+                                            retry_list.push(retry_peer);
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
+                        }
                     },
                     _ => {}
                 }
             }
+            // // In your select! loop:
+            // _ = network_check.tick() => {
+            //     let state = swarm.connection_state.lock().unwrap();
+            //     println!("Current connections: {}", state.len());
+            //     for (peer, since) in state.iter() {
+            //         println!("- {} (connected for {:?})", peer, since.elapsed());
+            //     }
+                
+            //     println!("mDNS discovered peers:");
+            //     for peer in swarm.behaviour().mdns.discovered_nodes() {
+            //         println!("- {}", peer);
+            //     }
+            // }
             _ = heartbeat_interval.tick() => {
                 // Refresh public IP on each heartbeat
                 let current_ip = get_public_ip().await?;
@@ -663,69 +751,61 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
                 let mut metrics = metrics_clone.lock().unwrap();
                 metrics.last_heartbeat_time = Some(Instant::now());
-                let mesh_peers = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
-                println!("Current mesh size: {}", mesh_peers);
-                metrics.mesh_peer_counts.push(mesh_peers);
+
             }
             _ = signing_request_interval.tick() => {
-                let mesh_peers_count = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).count();
-                // Check if the mesh peer count meets the threshold of 3
-                if mesh_peers_count >= 3 {
-                    println!("Initiating automated signing request ({} mesh peers >= 3).", mesh_peers_count);
-                    let log_file_inner_clone = log_file_clone.clone(); // Clone only if needed
 
-                    let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
-                    let message_content = format!("Auto Sign Request @ {}", timestamp);
+                println!("Current peer count: {}", swarm.connected_peers().count());
+                let log_file_inner_clone = log_file_clone.clone(); // Clone only if needed
 
-                    let mut hasher = Sha256::new();
-                    hasher.update(message_content.as_bytes());
-                    let message_hash_bytes = hasher.finalize();
-                    let message_hash_hex = hex::encode(message_hash_bytes);
+                let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_secs();
+                let message_content = format!("Auto Sign Request @ {}", timestamp);
 
-                    let mut initial_signatures = HashSet::new();
-                    let local_peer_id_str = local_peer_id.to_string();
-                    initial_signatures.insert(local_peer_id_str.clone());
+                let mut hasher = Sha256::new();
+                hasher.update(message_content.as_bytes());
+                let message_hash_bytes = hasher.finalize();
+                let message_hash_hex = hex::encode(message_hash_bytes);
 
-                    let signed_message = SignedMessage {
-                        content: message_content.to_string(),
-                        originator_id: local_peer_id_str.clone(),
-                        message_hash: message_hash_hex.clone(),
-                        signatures: initial_signatures,
-                    };
+                let mut initial_signatures = HashSet::new();
+                let local_peer_id_str = local_peer_id.to_string();
+                initial_signatures.insert(local_peer_id_str.clone());
 
-                    let mut store = message_store_clone.lock().unwrap();
-                    if !store.contains_key(&message_hash_hex) {
-                        store.insert(message_hash_hex.clone(), signed_message.clone());
-                        drop(store); // Release lock before async operations
+                let signed_message = SignedMessage {
+                    content: message_content.to_string(),
+                    originator_id: local_peer_id_str.clone(),
+                    message_hash: message_hash_hex.clone(),
+                    signatures: initial_signatures,
+                };
 
-                        match serde_json::to_string(&signed_message) {
-                            Ok(json_message) => {
-                                if let Err(e) = swarm
-                                    .behaviour_mut().gossipsub
-                                    .publish(topic.clone(), json_message.as_bytes())
-                                {
-                                    eprintln!("Publish error for auto-sign request: {e:?}. Queuing for retry.");
-                                    failed_publish_queue_clone.lock().unwrap().push_back(signed_message);
-                                } else {
-                                   // println!("Auto-sign message published: Hash {}", message_hash_hex);
-                                   // Log initial publication
-                                   write_log(
-                                        &log_file_inner_clone, // Use the cloned log file handle
-                                        format!("MSG_PUBLISH_INIT Node={} Hash={} Content='{}'", local_peer_id_str, message_hash_hex, signed_message.content)
-                                    ).await;
-                                }
-                            }
-                            Err(e) => {
-                                 eprintln!("Error serializing auto-sign message: {}. Queuing for retry.", e);
-                                 failed_publish_queue_clone.lock().unwrap().push_back(signed_message);
+                let mut store = message_store_clone.lock().unwrap();
+                if !store.contains_key(&message_hash_hex) {
+                    store.insert(message_hash_hex.clone(), signed_message.clone());
+                    drop(store); // Release lock before async operations
+
+                    match serde_json::to_string(&signed_message) {
+                        Ok(json_message) => {
+                            if let Err(e) = swarm
+                                .behaviour_mut().gossipsub
+                                .publish(topic.clone(), json_message.as_bytes())
+                            {
+                                eprintln!("Publish error for auto-sign request: {e:?}. Queuing for retry.");
+                                failed_publish_queue_clone.lock().unwrap().push_back(signed_message);
+                            } else {
+                                // println!("Auto-sign message published: Hash {}", message_hash_hex);
+                                // Log initial publication
+                                write_log(
+                                    &log_file_inner_clone, // Use the cloned log file handle
+                                    format!("MSG_PUBLISH_INIT Node={} Hash={} Content='{}'", local_peer_id_str, message_hash_hex, signed_message.content)
+                                ).await;
                             }
                         }
-                    } else {
-                        drop(store); // Release lock if message already exists
+                        Err(e) => {
+                                eprintln!("Error serializing auto-sign message: {}. Queuing for retry.", e);
+                                failed_publish_queue_clone.lock().unwrap().push_back(signed_message);
+                        }
                     }
                 } else {
-                    // Log that we are skipping because the threshold isn't met
-                    println!("Skipping automated signing request: Need >= 3 mesh peers, have {}.", mesh_peers_count);
+                    drop(store); // Release lock if message already exists
                 }
             }
             _ = retry_publish_interval.tick() => { // Added retry logic arm
@@ -780,36 +860,78 @@ async fn main() -> Result<(), Box<dyn Error>> {
                     (metrics.successful_connections as f64 / metrics.connection_attempts as f64) * 100.0);
                 println!("Average Connection Duration: {:?}", avg_connection_duration);
                 println!("Average Message Latency: {:?}", avg_message_latency);
-                println!("Current Mesh Size: {}", mesh_peers);
-                println!("Mesh Size History (last 5): {:?}", 
-                    metrics.mesh_peer_counts.iter().rev().take(5).collect::<Vec<_>>());
+
                 println!("Last Heartbeat: {:?}", metrics.last_heartbeat_time);
                 println!("=====================\n");
             }
-        }
-
-        // Add mesh formation check in the main loop
-        let peer_ids: Vec<PeerId> = swarm.connected_peers().cloned().collect();
-        let mesh_peers: HashSet<PeerId> = swarm.behaviour().gossipsub.mesh_peers(&topic.hash()).cloned().collect();
-        
-        for peer_id in peer_ids {
-            if !mesh_peers.contains(&peer_id) {
-                println!("Peer {} is connected but not in mesh, attempting to force mesh addition", peer_id);
-                swarm.behaviour_mut().gossipsub.add_explicit_peer(&peer_id);
-                
-                // Generate unique message with timestamp and random number
-                let timestamp = SystemTime::now().duration_since(UNIX_EPOCH).unwrap().as_millis();
-                let random_num: u64 = random();
-                let test_message = format!("Mesh test {} {} {}", peer_id, timestamp, random_num);
-                if let Err(e) = swarm.behaviour_mut().gossipsub.publish(topic.clone(), test_message.as_bytes()) {
-                    println!("Failed to publish test message: {}", e);
-                }
-                
-                if mesh_peers.len() < 5 {
-                    println!("Mesh size below target ({} < 5), attempting to force peer {} into mesh", 
-                        mesh_peers.len(), peer_id);
+            _ = connection_retry_interval.tick() => {
+                let mut retry_list = retry_list_clone.lock().unwrap();
+                if !retry_list.is_empty() {
+                    println!("Attempting to redial {} peers from retry list", retry_list.len());
+                    
+                    // Make a copy of the retry list
+                    let mut retry_peers = Vec::new();
+                    let now = SystemTime::now();
+                    
+                    // Process each peer in the retry list
+                    retry_list.retain(|peer| {
+                        // Only retry if last attempt was more than 10 seconds ago
+                        // and less than 5 retry attempts have been made
+                        let elapsed = now.duration_since(peer.last_attempt).unwrap_or(Duration::from_secs(0));
+                        if elapsed >= Duration::from_secs(10) && peer.retry_count < 5 {
+                            retry_peers.push(peer.clone());
+                            true // Keep in the list for potential future retries
+                        } else if peer.retry_count >= 5 {
+                            println!("Removing peer {} from retry list after {} attempts", 
+                                    peer.peer_id, peer.retry_count);
+                            false // Remove from list if max retries reached
+                        } else {
+                            true // Keep in list but don't retry yet
+                        }
+                    });
+                    
+                    // Drop the lock before attempting to dial
+                    drop(retry_list);
+                    
+                    // Attempt to dial each peer
+                    for mut peer in retry_peers {
+                        println!("Retrying connection to peer: {} (attempt {})", 
+                                peer.peer_id, peer.retry_count + 1);
+                        
+                        match swarm.dial(peer.multiaddr.clone()) {
+                            Ok(_) => {
+                                println!("Retry dial initiated for peer: {}", peer.peer_id);
+                                // Update retry count and last attempt time
+                                peer.retry_count += 1;
+                                peer.last_attempt = now;
+                                
+                                // Update the peer in the retry list
+                                let mut retry_list = retry_list_clone.lock().unwrap();
+                                if let Some(existing_peer) = retry_list.iter_mut()
+                                    .find(|p| p.peer_id == peer.peer_id) {
+                                    existing_peer.retry_count = peer.retry_count;
+                                    existing_peer.last_attempt = peer.last_attempt;
+                                }
+                            }
+                            Err(e) => {
+                                println!("Retry dial failed for peer {}: {}", peer.peer_id, e);
+                                // Update the retry count and last attempt anyway
+                                peer.retry_count += 1;
+                                peer.last_attempt = now;
+                                
+                                // Update the peer in the retry list
+                                let mut retry_list = retry_list_clone.lock().unwrap();
+                                if let Some(existing_peer) = retry_list.iter_mut()
+                                    .find(|p| p.peer_id == peer.peer_id) {
+                                    existing_peer.retry_count = peer.retry_count;
+                                    existing_peer.last_attempt = peer.last_attempt;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
+
     }
 }
