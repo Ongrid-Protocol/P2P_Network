@@ -488,7 +488,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let mut heartbeat_interval = interval(Duration::from_secs(60));
-    let mut signing_request_interval = interval(Duration::from_secs(10)); 
+    let mut signing_request_interval = interval(Duration::from_secs(3600)); // Changed from 10 seconds to 1 hour
     let mut retry_publish_interval = interval(Duration::from_secs(30)); // Added retry interval
 
     let network_metrics: Arc<Mutex<NetworkMetrics>> = Arc::new(Mutex::new(NetworkMetrics::default()));

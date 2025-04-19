@@ -1,0 +1,10 @@
+node:
+  name: "node62"
+  port: 33396
+  private_key: "8d8e21b89884c310537e343d71e6dd58f4d541c39f8eba38a5c128cd0868604a"
+  ic:
+    network: "local"
+    canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
+    is_local: true
+    url: "http://127.0.0.1:4943"
+  peer_nodes: []

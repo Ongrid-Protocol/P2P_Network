@@ -1,0 +1,10 @@
+node:
+  name: "node51"
+  port: 33385
+  private_key: "57559dec674e2240df29ec600d40ad04f7680394b49f325b14d450d70509fa43"
+  ic:
+    network: "local"
+    canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
+    is_local: true
+    url: "http://127.0.0.1:4943"
+  peer_nodes: []

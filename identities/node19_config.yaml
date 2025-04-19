@@ -1,7 +1,7 @@
 node:
   name: "node19"
   port: 33353
-  private_key: "fc230d7a3eec7a280480930d516edf7c31c4f3b69ecdb60f1230bfa77802c66f"
+  private_key: "5ceeba8a46d042a138c7b492d98e704be0b57c8d6447f6a3ebf32729aaa132c6"
   ic:
     network: "local"
     canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"

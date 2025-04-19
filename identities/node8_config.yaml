@@ -1,7 +1,7 @@
 node:
   name: "node8"
   port: 33342
-  private_key: "49a6a880e1354447684dbff4eb5fd6025bcd9f8abe98dc7e875d8f0e9607ddd5"
+  private_key: "1e17c95a91bae103659999caa6fd2e8f148a79604f54715ff0ac51d722181404"
   ic:
     network: "local"
     canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"

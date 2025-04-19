@@ -1,7 +1,7 @@
 node:
   name: "node6"
   port: 33340
-  private_key: "ec410655fac914ef632be6b97b56b72fd1fed96ce0066f3ad2da9350f7689970"
+  private_key: "75a7f19e17e0770b0b5250cbeb8fd1a7f7542b141b38352ad08fbe5b6edc876d"
   ic:
     network: "local"
     canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"

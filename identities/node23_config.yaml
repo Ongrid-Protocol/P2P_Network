@@ -1,0 +1,10 @@
+node:
+  name: "node23"
+  port: 33357
+  private_key: "9807ec361a1dac11ece99f5d841b28a26661eda866dcb88a91047ab8fd47158a"
+  ic:
+    network: "local"
+    canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
+    is_local: true
+    url: "http://127.0.0.1:4943"
+  peer_nodes: []

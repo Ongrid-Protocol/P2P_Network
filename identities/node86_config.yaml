@@ -1,0 +1,10 @@
+node:
+  name: "node86"
+  port: 33420
+  private_key: "db88d221ea1de5dc792a33204ad4028e839389c252535d8abeced977d97db969"
+  ic:
+    network: "local"
+    canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
+    is_local: true
+    url: "http://127.0.0.1:4943"
+  peer_nodes: []

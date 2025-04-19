@@ -10,242 +10,1913 @@ services:
     image: p2p-node-image
     volumes:
       - ./identities/node1_config.yaml:/app/config.yaml:ro
+      - ./logs/node1:/app/logs
+      - ./logs/node1/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node1
       - RUST_LOG=info
       - MDNS_PORT=5354
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node2:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node2_config.yaml:/app/config.yaml:ro
+      - ./logs/node2:/app/logs
+      - ./logs/node2/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node2
       - RUST_LOG=info
       - MDNS_PORT=5355
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node3:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node3_config.yaml:/app/config.yaml:ro
+      - ./logs/node3:/app/logs
+      - ./logs/node3/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node3
       - RUST_LOG=info
       - MDNS_PORT=5356
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node4:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node4_config.yaml:/app/config.yaml:ro
+      - ./logs/node4:/app/logs
+      - ./logs/node4/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node4
       - RUST_LOG=info
       - MDNS_PORT=5357
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node5:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node5_config.yaml:/app/config.yaml:ro
+      - ./logs/node5:/app/logs
+      - ./logs/node5/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node5
       - RUST_LOG=info
       - MDNS_PORT=5358
     network_mode: host
     command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node6:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node6_config.yaml:/app/config.yaml:ro
+      - ./logs/node6:/app/logs
+      - ./logs/node6/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node6
       - RUST_LOG=info
       - MDNS_PORT=5359
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node7:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node7_config.yaml:/app/config.yaml:ro
+      - ./logs/node7:/app/logs
+      - ./logs/node7/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node7
       - RUST_LOG=info
       - MDNS_PORT=5360
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node8:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node8_config.yaml:/app/config.yaml:ro
+      - ./logs/node8:/app/logs
+      - ./logs/node8/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node8
       - RUST_LOG=info
       - MDNS_PORT=5361
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node9:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node9_config.yaml:/app/config.yaml:ro
+      - ./logs/node9:/app/logs
+      - ./logs/node9/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node9
       - RUST_LOG=info
       - MDNS_PORT=5362
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node10:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node10_config.yaml:/app/config.yaml:ro
+      - ./logs/node10:/app/logs
+      - ./logs/node10/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node10
       - RUST_LOG=info
       - MDNS_PORT=5363
     network_mode: host
     command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node11:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node11_config.yaml:/app/config.yaml:ro
+      - ./logs/node11:/app/logs
+      - ./logs/node11/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node11
       - RUST_LOG=info
       - MDNS_PORT=5364
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node12:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node12_config.yaml:/app/config.yaml:ro
+      - ./logs/node12:/app/logs
+      - ./logs/node12/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node12
       - RUST_LOG=info
       - MDNS_PORT=5365
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node13:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node13_config.yaml:/app/config.yaml:ro
+      - ./logs/node13:/app/logs
+      - ./logs/node13/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node13
       - RUST_LOG=info
       - MDNS_PORT=5366
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node14:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node14_config.yaml:/app/config.yaml:ro
+      - ./logs/node14:/app/logs
+      - ./logs/node14/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node14
       - RUST_LOG=info
       - MDNS_PORT=5367
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node15:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node15_config.yaml:/app/config.yaml:ro
+      - ./logs/node15:/app/logs
+      - ./logs/node15/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node15
       - RUST_LOG=info
       - MDNS_PORT=5368
     network_mode: host
     command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node16:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node16_config.yaml:/app/config.yaml:ro
+      - ./logs/node16:/app/logs
+      - ./logs/node16/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node16
       - RUST_LOG=info
       - MDNS_PORT=5369
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node17:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node17_config.yaml:/app/config.yaml:ro
+      - ./logs/node17:/app/logs
+      - ./logs/node17/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node17
       - RUST_LOG=info
       - MDNS_PORT=5370
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node18:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node18_config.yaml:/app/config.yaml:ro
+      - ./logs/node18:/app/logs
+      - ./logs/node18/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node18
       - RUST_LOG=info
       - MDNS_PORT=5371
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node19:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node19_config.yaml:/app/config.yaml:ro
+      - ./logs/node19:/app/logs
+      - ./logs/node19/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node19
       - RUST_LOG=info
       - MDNS_PORT=5372
     network_mode: host
-    command: sh -c "sleep 5 && /app/p2p"
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
 
   node20:
     <<: *node-build
     image: p2p-node-image
     volumes:
       - ./identities/node20_config.yaml:/app/config.yaml:ro
+      - ./logs/node20:/app/logs
+      - ./logs/node20/verification_log.txt:/app/verification_log.txt
     environment:
       - NODE_NAME=node20
       - RUST_LOG=info
       - MDNS_PORT=5373
     network_mode: host
     command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node21:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node21_config.yaml:/app/config.yaml:ro
+      - ./logs/node21:/app/logs
+      - ./logs/node21/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node21
+      - RUST_LOG=info
+      - MDNS_PORT=5374
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node22:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node22_config.yaml:/app/config.yaml:ro
+      - ./logs/node22:/app/logs
+      - ./logs/node22/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node22
+      - RUST_LOG=info
+      - MDNS_PORT=5375
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node23:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node23_config.yaml:/app/config.yaml:ro
+      - ./logs/node23:/app/logs
+      - ./logs/node23/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node23
+      - RUST_LOG=info
+      - MDNS_PORT=5376
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node24:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node24_config.yaml:/app/config.yaml:ro
+      - ./logs/node24:/app/logs
+      - ./logs/node24/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node24
+      - RUST_LOG=info
+      - MDNS_PORT=5377
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node25:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node25_config.yaml:/app/config.yaml:ro
+      - ./logs/node25:/app/logs
+      - ./logs/node25/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node25
+      - RUST_LOG=info
+      - MDNS_PORT=5378
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node26:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node26_config.yaml:/app/config.yaml:ro
+      - ./logs/node26:/app/logs
+      - ./logs/node26/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node26
+      - RUST_LOG=info
+      - MDNS_PORT=5379
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node27:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node27_config.yaml:/app/config.yaml:ro
+      - ./logs/node27:/app/logs
+      - ./logs/node27/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node27
+      - RUST_LOG=info
+      - MDNS_PORT=5380
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node28:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node28_config.yaml:/app/config.yaml:ro
+      - ./logs/node28:/app/logs
+      - ./logs/node28/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node28
+      - RUST_LOG=info
+      - MDNS_PORT=5381
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node29:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node29_config.yaml:/app/config.yaml:ro
+      - ./logs/node29:/app/logs
+      - ./logs/node29/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node29
+      - RUST_LOG=info
+      - MDNS_PORT=5382
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node30:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node30_config.yaml:/app/config.yaml:ro
+      - ./logs/node30:/app/logs
+      - ./logs/node30/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node30
+      - RUST_LOG=info
+      - MDNS_PORT=5383
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node31:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node31_config.yaml:/app/config.yaml:ro
+      - ./logs/node31:/app/logs
+      - ./logs/node31/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node31
+      - RUST_LOG=info
+      - MDNS_PORT=5384
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node32:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node32_config.yaml:/app/config.yaml:ro
+      - ./logs/node32:/app/logs
+      - ./logs/node32/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node32
+      - RUST_LOG=info
+      - MDNS_PORT=5385
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node33:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node33_config.yaml:/app/config.yaml:ro
+      - ./logs/node33:/app/logs
+      - ./logs/node33/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node33
+      - RUST_LOG=info
+      - MDNS_PORT=5386
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node34:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node34_config.yaml:/app/config.yaml:ro
+      - ./logs/node34:/app/logs
+      - ./logs/node34/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node34
+      - RUST_LOG=info
+      - MDNS_PORT=5387
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node35:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node35_config.yaml:/app/config.yaml:ro
+      - ./logs/node35:/app/logs
+      - ./logs/node35/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node35
+      - RUST_LOG=info
+      - MDNS_PORT=5388
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node36:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node36_config.yaml:/app/config.yaml:ro
+      - ./logs/node36:/app/logs
+      - ./logs/node36/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node36
+      - RUST_LOG=info
+      - MDNS_PORT=5389
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node37:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node37_config.yaml:/app/config.yaml:ro
+      - ./logs/node37:/app/logs
+      - ./logs/node37/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node37
+      - RUST_LOG=info
+      - MDNS_PORT=5390
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node38:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node38_config.yaml:/app/config.yaml:ro
+      - ./logs/node38:/app/logs
+      - ./logs/node38/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node38
+      - RUST_LOG=info
+      - MDNS_PORT=5391
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node39:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node39_config.yaml:/app/config.yaml:ro
+      - ./logs/node39:/app/logs
+      - ./logs/node39/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node39
+      - RUST_LOG=info
+      - MDNS_PORT=5392
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node40:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node40_config.yaml:/app/config.yaml:ro
+      - ./logs/node40:/app/logs
+      - ./logs/node40/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node40
+      - RUST_LOG=info
+      - MDNS_PORT=5393
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node41:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node41_config.yaml:/app/config.yaml:ro
+      - ./logs/node41:/app/logs
+      - ./logs/node41/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node41
+      - RUST_LOG=info
+      - MDNS_PORT=5394
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node42:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node42_config.yaml:/app/config.yaml:ro
+      - ./logs/node42:/app/logs
+      - ./logs/node42/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node42
+      - RUST_LOG=info
+      - MDNS_PORT=5395
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node43:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node43_config.yaml:/app/config.yaml:ro
+      - ./logs/node43:/app/logs
+      - ./logs/node43/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node43
+      - RUST_LOG=info
+      - MDNS_PORT=5396
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node44:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node44_config.yaml:/app/config.yaml:ro
+      - ./logs/node44:/app/logs
+      - ./logs/node44/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node44
+      - RUST_LOG=info
+      - MDNS_PORT=5397
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node45:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node45_config.yaml:/app/config.yaml:ro
+      - ./logs/node45:/app/logs
+      - ./logs/node45/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node45
+      - RUST_LOG=info
+      - MDNS_PORT=5398
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node46:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node46_config.yaml:/app/config.yaml:ro
+      - ./logs/node46:/app/logs
+      - ./logs/node46/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node46
+      - RUST_LOG=info
+      - MDNS_PORT=5399
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node47:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node47_config.yaml:/app/config.yaml:ro
+      - ./logs/node47:/app/logs
+      - ./logs/node47/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node47
+      - RUST_LOG=info
+      - MDNS_PORT=5400
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node48:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node48_config.yaml:/app/config.yaml:ro
+      - ./logs/node48:/app/logs
+      - ./logs/node48/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node48
+      - RUST_LOG=info
+      - MDNS_PORT=5401
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node49:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node49_config.yaml:/app/config.yaml:ro
+      - ./logs/node49:/app/logs
+      - ./logs/node49/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node49
+      - RUST_LOG=info
+      - MDNS_PORT=5402
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node50:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node50_config.yaml:/app/config.yaml:ro
+      - ./logs/node50:/app/logs
+      - ./logs/node50/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node50
+      - RUST_LOG=info
+      - MDNS_PORT=5403
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node51:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node51_config.yaml:/app/config.yaml:ro
+      - ./logs/node51:/app/logs
+      - ./logs/node51/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node51
+      - RUST_LOG=info
+      - MDNS_PORT=5404
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node52:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node52_config.yaml:/app/config.yaml:ro
+      - ./logs/node52:/app/logs
+      - ./logs/node52/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node52
+      - RUST_LOG=info
+      - MDNS_PORT=5405
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node53:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node53_config.yaml:/app/config.yaml:ro
+      - ./logs/node53:/app/logs
+      - ./logs/node53/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node53
+      - RUST_LOG=info
+      - MDNS_PORT=5406
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node54:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node54_config.yaml:/app/config.yaml:ro
+      - ./logs/node54:/app/logs
+      - ./logs/node54/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node54
+      - RUST_LOG=info
+      - MDNS_PORT=5407
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node55:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node55_config.yaml:/app/config.yaml:ro
+      - ./logs/node55:/app/logs
+      - ./logs/node55/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node55
+      - RUST_LOG=info
+      - MDNS_PORT=5408
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node56:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node56_config.yaml:/app/config.yaml:ro
+      - ./logs/node56:/app/logs
+      - ./logs/node56/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node56
+      - RUST_LOG=info
+      - MDNS_PORT=5409
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node57:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node57_config.yaml:/app/config.yaml:ro
+      - ./logs/node57:/app/logs
+      - ./logs/node57/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node57
+      - RUST_LOG=info
+      - MDNS_PORT=5410
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node58:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node58_config.yaml:/app/config.yaml:ro
+      - ./logs/node58:/app/logs
+      - ./logs/node58/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node58
+      - RUST_LOG=info
+      - MDNS_PORT=5411
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node59:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node59_config.yaml:/app/config.yaml:ro
+      - ./logs/node59:/app/logs
+      - ./logs/node59/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node59
+      - RUST_LOG=info
+      - MDNS_PORT=5412
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node60:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node60_config.yaml:/app/config.yaml:ro
+      - ./logs/node60:/app/logs
+      - ./logs/node60/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node60
+      - RUST_LOG=info
+      - MDNS_PORT=5413
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node61:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node61_config.yaml:/app/config.yaml:ro
+      - ./logs/node61:/app/logs
+      - ./logs/node61/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node61
+      - RUST_LOG=info
+      - MDNS_PORT=5414
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node62:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node62_config.yaml:/app/config.yaml:ro
+      - ./logs/node62:/app/logs
+      - ./logs/node62/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node62
+      - RUST_LOG=info
+      - MDNS_PORT=5415
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node63:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node63_config.yaml:/app/config.yaml:ro
+      - ./logs/node63:/app/logs
+      - ./logs/node63/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node63
+      - RUST_LOG=info
+      - MDNS_PORT=5416
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node64:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node64_config.yaml:/app/config.yaml:ro
+      - ./logs/node64:/app/logs
+      - ./logs/node64/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node64
+      - RUST_LOG=info
+      - MDNS_PORT=5417
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node65:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node65_config.yaml:/app/config.yaml:ro
+      - ./logs/node65:/app/logs
+      - ./logs/node65/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node65
+      - RUST_LOG=info
+      - MDNS_PORT=5418
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node66:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node66_config.yaml:/app/config.yaml:ro
+      - ./logs/node66:/app/logs
+      - ./logs/node66/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node66
+      - RUST_LOG=info
+      - MDNS_PORT=5419
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node67:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node67_config.yaml:/app/config.yaml:ro
+      - ./logs/node67:/app/logs
+      - ./logs/node67/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node67
+      - RUST_LOG=info
+      - MDNS_PORT=5420
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node68:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node68_config.yaml:/app/config.yaml:ro
+      - ./logs/node68:/app/logs
+      - ./logs/node68/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node68
+      - RUST_LOG=info
+      - MDNS_PORT=5421
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node69:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node69_config.yaml:/app/config.yaml:ro
+      - ./logs/node69:/app/logs
+      - ./logs/node69/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node69
+      - RUST_LOG=info
+      - MDNS_PORT=5422
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node70:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node70_config.yaml:/app/config.yaml:ro
+      - ./logs/node70:/app/logs
+      - ./logs/node70/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node70
+      - RUST_LOG=info
+      - MDNS_PORT=5423
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node71:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node71_config.yaml:/app/config.yaml:ro
+      - ./logs/node71:/app/logs
+      - ./logs/node71/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node71
+      - RUST_LOG=info
+      - MDNS_PORT=5424
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node72:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node72_config.yaml:/app/config.yaml:ro
+      - ./logs/node72:/app/logs
+      - ./logs/node72/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node72
+      - RUST_LOG=info
+      - MDNS_PORT=5425
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node73:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node73_config.yaml:/app/config.yaml:ro
+      - ./logs/node73:/app/logs
+      - ./logs/node73/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node73
+      - RUST_LOG=info
+      - MDNS_PORT=5426
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node74:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node74_config.yaml:/app/config.yaml:ro
+      - ./logs/node74:/app/logs
+      - ./logs/node74/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node74
+      - RUST_LOG=info
+      - MDNS_PORT=5427
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node75:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node75_config.yaml:/app/config.yaml:ro
+      - ./logs/node75:/app/logs
+      - ./logs/node75/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node75
+      - RUST_LOG=info
+      - MDNS_PORT=5428
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node76:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node76_config.yaml:/app/config.yaml:ro
+      - ./logs/node76:/app/logs
+      - ./logs/node76/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node76
+      - RUST_LOG=info
+      - MDNS_PORT=5429
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node77:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node77_config.yaml:/app/config.yaml:ro
+      - ./logs/node77:/app/logs
+      - ./logs/node77/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node77
+      - RUST_LOG=info
+      - MDNS_PORT=5430
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node78:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node78_config.yaml:/app/config.yaml:ro
+      - ./logs/node78:/app/logs
+      - ./logs/node78/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node78
+      - RUST_LOG=info
+      - MDNS_PORT=5431
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node79:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node79_config.yaml:/app/config.yaml:ro
+      - ./logs/node79:/app/logs
+      - ./logs/node79/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node79
+      - RUST_LOG=info
+      - MDNS_PORT=5432
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node80:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node80_config.yaml:/app/config.yaml:ro
+      - ./logs/node80:/app/logs
+      - ./logs/node80/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node80
+      - RUST_LOG=info
+      - MDNS_PORT=5433
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node81:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node81_config.yaml:/app/config.yaml:ro
+      - ./logs/node81:/app/logs
+      - ./logs/node81/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node81
+      - RUST_LOG=info
+      - MDNS_PORT=5434
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node82:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node82_config.yaml:/app/config.yaml:ro
+      - ./logs/node82:/app/logs
+      - ./logs/node82/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node82
+      - RUST_LOG=info
+      - MDNS_PORT=5435
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node83:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node83_config.yaml:/app/config.yaml:ro
+      - ./logs/node83:/app/logs
+      - ./logs/node83/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node83
+      - RUST_LOG=info
+      - MDNS_PORT=5436
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node84:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node84_config.yaml:/app/config.yaml:ro
+      - ./logs/node84:/app/logs
+      - ./logs/node84/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node84
+      - RUST_LOG=info
+      - MDNS_PORT=5437
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node85:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node85_config.yaml:/app/config.yaml:ro
+      - ./logs/node85:/app/logs
+      - ./logs/node85/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node85
+      - RUST_LOG=info
+      - MDNS_PORT=5438
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node86:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node86_config.yaml:/app/config.yaml:ro
+      - ./logs/node86:/app/logs
+      - ./logs/node86/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node86
+      - RUST_LOG=info
+      - MDNS_PORT=5439
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node87:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node87_config.yaml:/app/config.yaml:ro
+      - ./logs/node87:/app/logs
+      - ./logs/node87/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node87
+      - RUST_LOG=info
+      - MDNS_PORT=5440
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node88:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node88_config.yaml:/app/config.yaml:ro
+      - ./logs/node88:/app/logs
+      - ./logs/node88/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node88
+      - RUST_LOG=info
+      - MDNS_PORT=5441
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node89:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node89_config.yaml:/app/config.yaml:ro
+      - ./logs/node89:/app/logs
+      - ./logs/node89/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node89
+      - RUST_LOG=info
+      - MDNS_PORT=5442
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node90:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node90_config.yaml:/app/config.yaml:ro
+      - ./logs/node90:/app/logs
+      - ./logs/node90/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node90
+      - RUST_LOG=info
+      - MDNS_PORT=5443
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node91:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node91_config.yaml:/app/config.yaml:ro
+      - ./logs/node91:/app/logs
+      - ./logs/node91/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node91
+      - RUST_LOG=info
+      - MDNS_PORT=5444
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node92:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node92_config.yaml:/app/config.yaml:ro
+      - ./logs/node92:/app/logs
+      - ./logs/node92/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node92
+      - RUST_LOG=info
+      - MDNS_PORT=5445
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node93:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node93_config.yaml:/app/config.yaml:ro
+      - ./logs/node93:/app/logs
+      - ./logs/node93/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node93
+      - RUST_LOG=info
+      - MDNS_PORT=5446
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node94:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node94_config.yaml:/app/config.yaml:ro
+      - ./logs/node94:/app/logs
+      - ./logs/node94/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node94
+      - RUST_LOG=info
+      - MDNS_PORT=5447
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node95:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node95_config.yaml:/app/config.yaml:ro
+      - ./logs/node95:/app/logs
+      - ./logs/node95/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node95
+      - RUST_LOG=info
+      - MDNS_PORT=5448
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node96:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node96_config.yaml:/app/config.yaml:ro
+      - ./logs/node96:/app/logs
+      - ./logs/node96/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node96
+      - RUST_LOG=info
+      - MDNS_PORT=5449
+    network_mode: host
+    command: sh -c "sleep 7 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node97:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node97_config.yaml:/app/config.yaml:ro
+      - ./logs/node97:/app/logs
+      - ./logs/node97/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node97
+      - RUST_LOG=info
+      - MDNS_PORT=5450
+    network_mode: host
+    command: sh -c "sleep 9 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node98:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node98_config.yaml:/app/config.yaml:ro
+      - ./logs/node98:/app/logs
+      - ./logs/node98/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node98
+      - RUST_LOG=info
+      - MDNS_PORT=5451
+    network_mode: host
+    command: sh -c "sleep 11 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node99:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node99_config.yaml:/app/config.yaml:ro
+      - ./logs/node99:/app/logs
+      - ./logs/node99/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node99
+      - RUST_LOG=info
+      - MDNS_PORT=5452
+    network_mode: host
+    command: sh -c "sleep 13 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  node100:
+    <<: *node-build
+    image: p2p-node-image
+    volumes:
+      - ./identities/node100_config.yaml:/app/config.yaml:ro
+      - ./logs/node100:/app/logs
+      - ./logs/node100/verification_log.txt:/app/verification_log.txt
+    environment:
+      - NODE_NAME=node100
+      - RUST_LOG=info
+      - MDNS_PORT=5453
+    network_mode: host
+    command: sh -c "sleep 5 && /app/p2p"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 500M
+
+  # Add the Internet Computer canister service for node registry
+  ic-canister:
+    image: dfinity/ic-standalone:latest
+    ports:
+      - "4943:4943"
+    volumes:
+      - ic_state:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4943/api/v2/status"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
 
 volumes:
   ic_state:
-
-# Removed the unused networks section 

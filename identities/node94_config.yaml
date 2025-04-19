@@ -1,0 +1,10 @@
+node:
+  name: "node94"
+  port: 33428
+  private_key: "cef5c296058514411ed4b6a439010553a86af404e49cbb136e1b53d70b438a88"
+  ic:
+    network: "local"
+    canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
+    is_local: true
+    url: "http://127.0.0.1:4943"
+  peer_nodes: []

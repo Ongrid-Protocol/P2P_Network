@@ -1,0 +1,10 @@
+node:
+  name: "node66"
+  port: 33400
+  private_key: "8a06c8caf765b4a4527dc65bd47bfc867b42677f800170fd6466999ac650a711"
+  ic:
+    network: "local"
+    canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
+    is_local: true
+    url: "http://127.0.0.1:4943"
+  peer_nodes: []

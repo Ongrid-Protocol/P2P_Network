@@ -1,0 +1,10 @@
+node:
+  name: "node29"
+  port: 33363
+  private_key: "bb2b5d3f854b34b39c61c2dee17ec3337cf1ddc295406bfef428a51134240442"
+  ic:
+    network: "local"
+    canister_id: "bkyz2-fmaaa-aaaaa-qaaaq-cai"
+    is_local: true
+    url: "http://127.0.0.1:4943"
+  peer_nodes: []
