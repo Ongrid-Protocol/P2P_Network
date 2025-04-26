@@ -12,6 +12,8 @@ use serde_json;
 use chrono::Utc; // Add chrono for timestamps
 use std::time::Instant; // Import Instant for duration checking if needed later
 use rand::random;
+use std::fs;
+
 
 // Define the structure for signed messages
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -31,7 +33,6 @@ struct NodeConfig {
 struct NodeSettings {
     name: String,
     port: u16,
-    private_key: String,
     ic: ICSettings,
     peer_nodes: Vec<String>,
 }
@@ -223,6 +224,19 @@ async fn clear_registry(agent: &Agent, canister_id: &Principal) -> Result<bool, 
     let result: bool = candid::decode_one(&response)?;
     Ok(result)
 }
+fn save_private_key(keypair: &identity::Keypair) -> Result<(), Box<dyn Error>> {
+    let bytes = keypair.to_protobuf_encoding()?;
+    fs::write("node_private_key.bin", bytes)?;
+    Ok(())
+}
+
+fn load_private_key() -> Result<Option<identity::Keypair>, Box<dyn Error>> {
+    if !Path::new("node_private_key.bin").exists() {
+        return Ok(None);
+    }
+    let bytes = fs::read("node_private_key.bin")?;
+    Ok(Some(identity::Keypair::from_protobuf_encoding(&bytes)?))
+}
 
 // Function to test network connectivity to a given host
 fn test_connectivity(target_ip: &str) -> bool {
@@ -295,12 +309,21 @@ async fn main() -> Result<(), Box<dyn Error>> {
     println!("Logging verification events to: {}", log_path);
     // --- End Log File Setup ---
 
-    let private_key_bytes = hex::decode(&config.node.private_key)?;
-    let id_keys = identity::Keypair::ed25519_from_bytes(private_key_bytes.clone())?;
+    // Load or generate Keypair
+    let id_keys = match load_private_key()? {
+        Some(keys) => keys,
+        None => {
+            let id_keys = identity::Keypair::generate_ed25519();
+            save_private_key(&id_keys)?;
+            id_keys
+        }
+    };
     let peer_id = PeerId::from(id_keys.public());
     println!("Peer ID: {}", peer_id);
+    let public_key_bytes = id_keys.public().to_peer_id().to_base58();
 
-    let node_principal = Principal::self_authenticating(&private_key_bytes);
+    let node_principal = Principal::self_authenticating(&public_key_bytes);
+
     println!("Node Principal ID: {}", node_principal);
 
     let message_store: MessageStore = Arc::new(Mutex::new(HashMap::new()));
